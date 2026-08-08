@@ -7,6 +7,9 @@ from .edit import EditFileTool
 from .glob_tool import GlobTool
 from .grep import GrepTool
 from .agent import AgentTool
+from .fetch import FetchUrlTool
+from .ast_analyzer import ASTAnalyzerTool
+from .git_diff import GitDiffTool
 
 ALL_TOOLS = [
     BashTool(),
@@ -16,6 +19,9 @@ ALL_TOOLS = [
     GlobTool(),
     GrepTool(),
     AgentTool(),
+    FetchUrlTool(),
+    ASTAnalyzerTool(),
+    GitDiffTool(),
 ]
 
 

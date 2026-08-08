@@ -215,6 +215,16 @@ def _repl(agent: Agent, config: Config):
                     console.print(f"  [cyan]{s['id']}[/cyan] ({s['model']}, {s['saved_at']}) {s['preview']}")
             continue
 
+        if user_input == "/review":
+            agent.set_mode("review")
+            console.print("[green]Switched to code review mode[/green]")
+            continue
+
+        if user_input == "/default":
+            agent.set_mode("default")
+            console.print("[green]Switched to default mode[/green]")
+            continue
+
         # an unknown /command shouldn't be sent to the model as a prompt
         if user_input.startswith("/"):
             console.print(f"[yellow]Unknown command: {user_input.split()[0]} (try /help)[/yellow]")
@@ -268,3 +278,4 @@ def _show_help():
 def _brief(kwargs: dict, maxlen: int = 80) -> str:
     s = ", ".join(f"{k}={repr(v)[:40]}" for k, v in kwargs.items())
     return s[:maxlen] + ("..." if len(s) > maxlen else "")
+

@@ -34,14 +34,30 @@ class Agent:
         self.context = ContextManager(max_tokens=max_context_tokens)
         self.max_rounds = max_rounds
         self._system = system_prompt(self.tools)
+        self._system_override = None
 
         # wire up sub-agent capability
         for t in self.tools:
             if isinstance(t, AgentTool):
                 t._parent_agent = self
 
+
+    def set_mode(self, mode: str):
+        """切换 Agent 模式"""
+        from .prompt import code_review_prompt
+        
+        if mode == "review":
+            self._system_override = code_review_prompt(self.tools)
+            print(f"[Mode] Switched to: review")
+        elif mode == "default":
+            self._system_override = None
+            print(f"[Mode] Switched to: default")
+        else:
+            print(f"[Mode] Unknown mode: {mode}")
+
     def _full_messages(self) -> list[dict]:
-        return [{"role": "system", "content": self._system}] + self.messages
+        system = self._system_override if self._system_override else self._system
+        return [{"role": "system", "content": system}] + self.messages
 
     def _tool_schemas(self) -> list[dict]:
         return [t.schema() for t in self.tools]
@@ -57,6 +73,9 @@ class Agent:
                 tools=self._tool_schemas(),
                 on_token=on_token,
             )
+
+            # print(f"[DEBUG] resp.content: {repr(resp.content)}")
+            # print(f"[DEBUG] resp.tool_calls: {resp.tool_calls}")
 
             # no tool calls -> LLM is done, return text
             if not resp.tool_calls:
@@ -111,7 +130,11 @@ class Agent:
             return f"Error: bad arguments for {tc.name}: {e}"
         try:
             return tool.execute(**tc.arguments)
+            # result = tool.execute(**tc.arguments)
+            # print(f"[DEBUG] Tool result: {repr(result[:200])}")  # 加这行
+            # return result
         except Exception as e:
+            #print(f"[DEBUG] Tool error: {e}")
             return f"Error executing {tc.name}: {e}"
 
     def _exec_tools_parallel(self, tool_calls, on_tool=None) -> list[str]:
@@ -148,3 +171,5 @@ class Agent:
     def reset(self):
         """Clear conversation history."""
         self.messages.clear()
+
+    #测试git_diff工具
