@@ -10,6 +10,8 @@ from .agent import AgentTool
 from .fetch import FetchUrlTool
 from .ast_analyzer import ASTAnalyzerTool
 from .git_diff import GitDiffTool
+from .git_diff_file import GitDiffFileTool
+from .mcp_tool import MCPTool
 
 ALL_TOOLS = [
     BashTool(),
@@ -22,6 +24,7 @@ ALL_TOOLS = [
     FetchUrlTool(),
     ASTAnalyzerTool(),
     GitDiffTool(),
+    GitDiffFileTool(),
 ]
 
 

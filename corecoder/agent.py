@@ -172,4 +172,4 @@ class Agent:
         """Clear conversation history."""
         self.messages.clear()
 
-    #测试git_diff工具
+    # test: 测试 PR 审查功能

@@ -225,10 +225,40 @@ def _repl(agent: Agent, config: Config):
             console.print("[green]Switched to default mode[/green]")
             continue
 
+        # cli.py 的 _repl 函数中
+        if user_input == "/mcp" or user_input.startswith("/mcp "):
+            # 解析 server 命令
+            parts = user_input.split(maxsplit=1)
+            if len(parts) < 2:
+                console.print("[yellow]用法: /mcp <server_command>[/yellow]")
+                console.print("[dim]示例: /mcp npx -y @modelcontextprotocol/server-filesystem .[/dim]")
+                continue
+
+            server_cmd = parts[1].split()
+            try:
+                from .tools.mcp_tool import MCPTool
+                mcp = MCPTool(server_cmd)
+                expanded = mcp.get_expanded_tools()
+                # 动态添加到 Agent 的工具列表
+                for tool in expanded:
+                    agent.tools.append(tool)
+                    agent._tool_by_name[tool.name] = tool
+                console.print(f"[green]✅ 已加载 {len(expanded)} 个 MCP 工具[/green]")
+            except Exception as e:
+                console.print(f"[red]❌ 加载失败: {e}[/red]")
+            continue
+
+        if user_input == "/mcp_files":
+            # 自动加载 Filesystem Server
+            server_cmd = ["C:\\Program Files\\nodejs\\npx.cmd", "-y", "@modelcontextprotocol/server-filesystem", "."]
+            # ... 执行加载逻辑
+            continue
+        
         # an unknown /command shouldn't be sent to the model as a prompt
         if user_input.startswith("/"):
             console.print(f"[yellow]Unknown command: {user_input.split()[0]} (try /help)[/yellow]")
             continue
+
 
         # call the agent
         streamed: list[str] = []
