@@ -10,7 +10,7 @@ import time
 import uuid
 from pathlib import Path
 
-SESSIONS_DIR = Path.home() / ".corecoder" / "sessions"
+SESSIONS_DIR = Path.home() / ".corecoder" / "sessions" 
 _SAFE_SESSION_RE = re.compile(r"[^A-Za-z0-9._-]+")
 _MAX_SESSION_ID_LEN = 100  # keep filenames comfortably under the OS limit
 
@@ -19,15 +19,15 @@ def _normalize_session_id(session_id: str | None) -> str:
     if not session_id:
         return _new_session_id()
 
-    name = session_id.strip().replace("\\", "/").split("/")[-1]
-    name = _SAFE_SESSION_RE.sub("-", name).strip(".-_")
+    name = session_id.strip().replace("\\", "/").split("/")[-1]  # 提取文件名部分
+    name = _SAFE_SESSION_RE.sub("-", name).strip(".-_")  # 移除特殊字符并去尾
     if len(name) > _MAX_SESSION_ID_LEN:
         name = name[:_MAX_SESSION_ID_LEN].strip(".-_")
     return name or _new_session_id()
 
 
-def _new_session_id() -> str:
-    return f"session_{time.strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
+def _new_session_id() -> str:  #生成新的会话ID，格式为session_时间戳_随机数
+    return f"session_{time.strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}" 
 
 
 def _session_path(session_id: str) -> Path:
@@ -40,7 +40,7 @@ def _session_path(session_id: str) -> Path:
 
 def save_session(messages: list[dict], model: str, session_id: str | None = None) -> str:
     """Save conversation to disk. Returns the session ID."""
-    SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
+    SESSIONS_DIR.mkdir(parents=True, exist_ok=True) 
 
     session_id = _normalize_session_id(session_id)
 

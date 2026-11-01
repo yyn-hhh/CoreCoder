@@ -125,18 +125,18 @@ def _repl(agent: Agent, config: Config):
         border_style="blue",
     ))
 
-    hist_path = os.path.expanduser("~/.corecoder_history")
-    history = FileHistory(hist_path)
+    hist_path = os.path.expanduser("~/.corecoder_history")  # 定义历史记录文件路径
+    history = FileHistory(hist_path)  # 创建历史记录对象，用户在 REPL 里能用上下箭头翻之前输入过的内容
 
     # Enter submits, Escape+Enter inserts a newline (for pasting code blocks etc.)
-    kb = KeyBindings()
+    kb = KeyBindings() 
 
     @kb.add("enter")
     def _submit(event):
         event.current_buffer.validate_and_handle()
 
     @kb.add("escape", "enter")
-    def _newline(event):
+    def _newline(event): 
         event.current_buffer.insert_text("\n")
 
     while True:
@@ -198,7 +198,7 @@ def _repl(agent: Agent, config: Config):
             console.print(f"[green]Session saved: {sid}[/green]")
             console.print(f"Resume with: corecoder -r {sid}")
             continue
-        if user_input == "/diff":
+        if user_input == "/diff": 
             from .tools.edit import _changed_files
             if not _changed_files:
                 console.print("[dim]No files modified this session.[/dim]")
@@ -237,7 +237,6 @@ def _repl(agent: Agent, config: Config):
 
             server_cmd = parts[1].split()
             try:
-                from .tools.mcp_tool import MCPTool
                 mcp = MCPTool(server_cmd)
                 expanded = mcp.get_expanded_tools()
                 # 动态添加到 Agent 的工具列表
@@ -277,14 +276,14 @@ def _repl(agent: Agent, config: Config):
                 print()  # newline after streamed tokens
             else:
                 # response wasn't streamed (came after tool calls)
-                console.print(Markdown(response))
+                console.print(Markdown(response)) 
         except KeyboardInterrupt:
             console.print("\n[yellow]Interrupted.[/yellow]")
         except Exception as e:
             console.print(f"\n[red]Error: {e}[/red]")
 
-    for tool in agent.tools:
-        if isinstance(tool, MCPTool):
+    for tool in agent.tools:   #找到所有 MCPTool 实例并关闭它们
+        if isinstance(tool, MCPTool): 
             tool.close()
 
 

@@ -7,12 +7,13 @@ and makes edits safe and reviewable.
 """
 
 import difflib
+from ._file_lock import get_file_lock, _changed_files
 from pathlib import Path
 
 from .base import Tool
 
 # track files changed this session for /diff
-_changed_files: set[str] = set()
+#_changed_files: set[str] = set()
 
 
 class EditFileTool(Tool):
@@ -47,29 +48,32 @@ class EditFileTool(Tool):
             if not p.exists():
                 return f"Error: {file_path} not found"
 
-            try:
-                content = p.read_text(encoding="utf-8") # 读取文件内容
-            except UnicodeDecodeError:
-                return f"Error: {file_path} is not a UTF-8 text file (edit_file only edits text files)"
-            occurrences = content.count(old_string) # 统计 old_string 出现的次数
+            lock = get_file_lock(str(p))
+            with lock:
+                try:
+                    content = p.read_text(encoding="utf-8") # 读取文件内容
+                except UnicodeDecodeError:
+                    return f"Error: {file_path} is not a UTF-8 text file (edit_file only edits text files)"
+                occurrences = content.count(old_string) # 统计 old_string 出现的次数
 
-            if occurrences == 0:
-                preview = content[:500] + ("..." if len(content) > 500 else "")
-                return (
-                    f"Error: old_string not found in {file_path}.\n" 
-                    f"File starts with:\n{preview}"
-                )
-            if occurrences > 1:
-                return (
-                    f"Error: old_string appears {occurrences} times in {file_path}. "
-                    f"Include more surrounding lines to make it unique."
-                )
+                if occurrences == 0:
+                    preview = content[:500] + ("..." if len(content) > 500 else "")
+                    return (
+                        f"Error: old_string not found in {file_path}.\n" 
+                        f"File starts with:\n{preview}"
+                    )
+                if occurrences > 1:
+                    return (
+                        f"Error: old_string appears {occurrences} times in {file_path}. "
+                        f"Include more surrounding lines to make it unique."
+                    )
 
-            new_content = content.replace(old_string, new_string, 1) # 替换 old_string 为 new_string，只替换一次
-            p.write_text(new_content, encoding="utf-8") # 写入新内容到文件，覆盖原内容
-            _changed_files.add(str(p)) 
+                new_content = content.replace(old_string, new_string, 1) # 替换 old_string 为 new_string，只替换一次
+                p.write_text(new_content, encoding="utf-8") # 写入新内容到文件，覆盖原内容
+                _changed_files.add(str(p)) 
 
             # generate a unified diff so the user/LLM can see exactly what changed
+            # (diff only processes strings, no file I/O, keep outside lock)
             diff = _unified_diff(content, new_content, str(p)) 
             return f"Edited {file_path}\n{diff}"
         except Exception as e:

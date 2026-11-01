@@ -78,7 +78,7 @@ class ContextManager:
             if m.get("role") != "tool":
                 continue
             content = m.get("content", "")
-            if len(content) <= 1500:
+            if len(content) <= 1500: 
                 continue
             lines = content.splitlines()
             if len(lines) <= 6:
@@ -149,7 +149,7 @@ class ContextManager:
 
     def _get_summary(self, messages: list[dict], llm: LLM | None) -> str:
         """Generate summary via LLM or fallback to extraction."""
-        flat = self._flatten(messages)
+        flat = self._flatten(messages)  #将消息列表转换为字符串
 
         if llm:
             try:
@@ -163,7 +163,8 @@ class ContextManager:
                                 "errors encountered, current task state. "
                                 "Drop: verbose command output, code listings, "
                                 "redundant back-and-forth."
-                            ),
+                            ), #提取四点信息：文件路径、关键决策、错误、当前任务状态
+                               #删除三点信息：详细命令输出、代码列表、冗余回话
                         },
                         {"role": "user", "content": flat[:15000]},
                     ],
@@ -208,3 +209,5 @@ class ContextManager:
         if errors:
             parts.append(f"Errors seen: {'; '.join(errors[:5])}")
         return "\n".join(parts) or "(no extractable context)"
+    #为什么只提取文件路径和错误信息？因为这两点最重要
+    #而且关键决策无法正则提取，当前任务状态已经在最近保留的信息里了

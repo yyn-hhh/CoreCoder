@@ -19,6 +19,11 @@ class GitDiffFileTool(Tool):
                 "description": "可选：对比基准（默认 HEAD，即查看工作区改动）",
                 "default": "",
             },
+            "head": {
+                "type": "string",
+                "description": "可选：对比终点（默认是工作区）。当 base 和 head 都提供时，比较两个提交之间该文件的改动",
+                "default": "",
+            },
         },
         "required": ["file_path"],
     }

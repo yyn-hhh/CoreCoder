@@ -17,7 +17,9 @@ from .tools.base import Tool
 from .tools.agent import AgentTool
 from .prompt import system_prompt
 from .context import ContextManager
+from rich.console import Console
 
+console = Console()
 
 class Agent:
     def __init__(
@@ -122,6 +124,12 @@ class Agent:
         tool = self._tool_by_name.get(tc.name)
         if tool is None:
             return f"Error: unknown tool '{tc.name}'"
+
+        if tc.name in ("edit_file", "write_file"):
+            console.print(f"\n[yellow]即将修改文件: {tc.arguments.get('file_path')}[/yellow]")
+            confirm = input("确认修改？(y/n): ").strip().lower()
+            if confirm != "y":
+                return "用户取消修改"
         # validate arguments first so a TypeError raised *inside* the tool isn't
         # mislabelled as a bad-arguments error from the caller
         try:

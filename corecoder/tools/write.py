@@ -2,7 +2,7 @@
 
 from pathlib import Path
 from .base import Tool
-from .edit import _changed_files
+from ._file_lock import get_file_lock, _changed_files
 
 
 class WriteFileTool(Tool):
@@ -30,8 +30,14 @@ class WriteFileTool(Tool):
         try:
             p = Path(file_path).expanduser().resolve()
             p.parent.mkdir(parents=True, exist_ok=True)
-            p.write_text(content, encoding="utf-8")
-            _changed_files.add(str(p))
+
+            # serialise all writes to the same physical file so parallel
+            # tool calls (ThreadPoolExecutor in agent.py) don't clobber each other
+            lock = get_file_lock(str(p))
+            with lock:
+                p.write_text(content, encoding="utf-8")
+                _changed_files.add(str(p))
+
             n_lines = content.count("\n") + (1 if content and not content.endswith("\n") else 0)
             return f"Wrote {n_lines} lines to {file_path}"
         except Exception as e:

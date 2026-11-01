@@ -28,7 +28,7 @@ class MCPTool(Tool):
 
     def _init_connection(self):
         try:
-            self._process = subprocess.Popen(
+            self._process = subprocess.Popen( # 启动子进程
                 self._server_command,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
@@ -66,7 +66,7 @@ class MCPTool(Tool):
 
                 if "id" in msg:  #带id的是响应
                     # 响应：匹配 pending 请求
-                    with self._lock:
+                    with self._lock: 
                         future = self._pending.pop(msg["id"], None)
                     if future and not future.done():
                         future.set_result(msg)
@@ -100,7 +100,7 @@ class MCPTool(Tool):
 
     def _request(self, method: str, params: dict, timeout: int = 30) -> dict | None:
         """发送 JSON-RPC 请求，等待响应"""
-        with self._lock:
+        with self._lock: 
             req_id = self._next_id
             self._next_id += 1
             future = concurrent.futures.Future()
@@ -163,7 +163,7 @@ class MCPTool(Tool):
         else:
             print(f"[MCP] 通知: {method}")
 
-    def _call_tool(self, tool_name: str, arguments: Dict) -> str:
+    def _call_tool(self, tool_name: str, arguments: Dict) -> str: 
         if not self._connected:
             return "Error: MCP Server 未连接"
 
@@ -183,7 +183,7 @@ class MCPTool(Tool):
             return f"Error: {response['error'].get('message', 'unknown')}"
         return "Error: 未知响应格式"
 
-    def close(self):
+    def close(self): 
         self._running = False
         if self._process:
             try:

@@ -16,7 +16,7 @@ from .base import Tool
 # Track cwd across commands (Claude Code does this too). Thread-local, so that
 # when the agent executes tools in parallel two bash calls never race on one
 # shared global: each worker thread carries its own cwd. See article 05.
-_local = threading.local()
+_local = threading.local() 
 
 # patterns that could wreck the filesystem or leak secrets
 _DANGEROUS_PATTERNS = [
@@ -64,7 +64,7 @@ class BashTool(Tool):
             return f"⚠ Blocked: {warning}\nCommand: {command}\nIf intentional, modify the command to be more specific."
 
         # use this thread's own tracked working directory
-        cwd = getattr(_local, "cwd", None) or os.getcwd()
+        cwd = getattr(_local, "cwd", None) or os.getcwd() 
 
         try:
             proc = subprocess.run(
@@ -79,7 +79,7 @@ class BashTool(Tool):
             )
 
             # track cd commands so next command runs in the right place
-            if proc.returncode == 0:
+            if proc.returncode == 0: 
                 _update_cwd(command, cwd)
             out = proc.stdout
             if proc.stderr:

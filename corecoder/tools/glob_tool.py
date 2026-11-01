@@ -31,13 +31,13 @@ class GlobTool(Tool):
             if not base.is_dir():
                 return f"Error: {path} is not a directory"
 
-            hits = list(base.glob(pattern))
+            hits = list(base.glob(pattern)) #根据pattern匹配文件路径/文件名
             # sort by mtime, newest first
-            hits.sort(key=lambda p: p.stat().st_mtime if p.exists() else 0, reverse=True)
+            hits.sort(key=lambda p: p.stat().st_mtime if p.exists() else 0, reverse=True)  #按修改时间排序，最新文件在前面
 
             total = len(hits)
             shown = hits[:100]
-            lines = [str(h) for h in shown]
+            lines = [str(h) for h in shown]  #将匹配的文件路径转换为字符串
             result = "\n".join(lines)
 
             if total > 100:

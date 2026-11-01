@@ -43,7 +43,7 @@ class ReadFileTool(Tool):
 
             start = max(0, offset - 1)
             chunk = lines[start : start + limit]
-            numbered = [f"{start + i + 1}\t{ln}" for i, ln in enumerate(chunk)]
+            numbered = [f"{start + i + 1}\t{ln}" for i, ln in enumerate(chunk)] 
             result = "\n".join(numbered)
 
             if total > start + limit:

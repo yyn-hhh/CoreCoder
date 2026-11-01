@@ -49,7 +49,7 @@ class AgentTool(Tool):
         )
 
         try:
-            result = sub.chat(task)
+            result = sub.chat(task) 
             # trim long results to avoid blowing up parent's context
             if len(result) > 5000:
                 result = result[:4500] + "\n... (sub-agent output truncated)"

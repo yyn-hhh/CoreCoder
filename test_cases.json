@@ -1,0 +1,38 @@
+[
+  {
+    "id": 1,
+    "category": "安全与规范审查",
+    "input": "审查 test_cases/test_style.py",
+    "expected": "指出 eval() 安全风险，指出使用了 print 违反规范"
+  },
+  {
+    "id": 2,
+    "category": "RAG 规范召回",
+    "input": "审查 test_cases/test_dict.py",
+    "expected": "调用 search_coding_rules，指出用 [] 取值不符合规范"
+  },
+  {
+    "id": 3,
+    "category": "基础逻辑审查",
+    "input": "审查 test_cases/test_basic.py",
+    "expected": "指出缺少除数为 0 的边界情况处理"
+  },
+  {
+    "id": 4,
+    "category": "异常容错（语法错误）",
+    "input": "审查 test_cases/test_syntax_error.py",
+    "expected": "AST 解析失败，Agent 能优雅提示语法错误，不崩溃"
+  },
+  {
+    "id": 5,
+    "category": "异常容错（文件不存在）",
+    "input": "审查 test_cases/not_exist.py",
+    "expected": "工具报错文件不存在，Agent 友好提示"
+  },
+  {
+    "id": 6,
+    "category": "Git Diff 感知",
+    "input": "审查当前工作区的改动",
+    "expected": "调用 git_diff 工具"
+  }
+]

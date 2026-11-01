@@ -12,12 +12,13 @@ from .ast_analyzer import ASTAnalyzerTool
 from .git_diff import GitDiffTool
 from .git_diff_file import GitDiffFileTool
 from .mcp_tool import MCPTool
+from .rag_tool import RAGSearchTool
 
 ALL_TOOLS = [
     BashTool(),
     ReadFileTool(),
-    WriteFileTool(),
-    EditFileTool(),
+    #WriteFileTool(),
+    #EditFileTool(),
     GlobTool(),
     GrepTool(),
     AgentTool(),
@@ -25,6 +26,7 @@ ALL_TOOLS = [
     ASTAnalyzerTool(),
     GitDiffTool(),
     GitDiffFileTool(),
+    RAGSearchTool(),
 ]
 
 

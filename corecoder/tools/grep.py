@@ -43,20 +43,20 @@ class GrepTool(Tool):
         if not base.exists():
             return f"Error: {path} not found"
 
-        if base.is_file():
+        if base.is_file():  #判断是否为文件
             files = [base]
         else:
-            files = self._walk(base, include)
+            files = self._walk(base, include)  #递归搜索目录下的所有文件
 
         matches = []
         for fp in files:
             try:
-                text = fp.read_text(encoding="utf-8", errors="ignore")
-            except OSError:
+                text = fp.read_text(encoding="utf-8", errors="ignore") 
+            except OSError:  #忽略读取文件时的错误
                 continue
             for lineno, line in enumerate(text.splitlines(), 1):
-                if regex.search(line):
-                    matches.append(f"{fp}:{lineno}: {line.rstrip()}")
+                if regex.search(line):  #正则搜索匹配的行
+                    matches.append(f"{fp}:{lineno}: {line.rstrip()}") 
                     if len(matches) >= 200:
                         matches.append("... (200 match limit reached)")
                         return "\n".join(matches)

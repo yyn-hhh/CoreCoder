@@ -1,0 +1,50 @@
+[
+  {
+    "id": 1,
+    "category": "安全与规范审查",
+    "status": "Success",
+    "time_cost_sec": 137.1,
+    "tokens": 9919,
+    "output_preview": " 根据审查结果，发现几个严重问题需要立即处理：  ## 严重问题 (Critical Issues)  | 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 | |------|------|..."
+  },
+  {
+    "id": 2,
+    "category": "RAG 规范召回",
+    "status": "Success",
+    "time_cost_sec": 74.98,
+    "tokens": 11169,
+    "output_preview": " ## 审查报告  ### 严重问题 (Critical Issues)  | 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 | |------|------|----------|---..."
+  },
+  {
+    "id": 3,
+    "category": "基础逻辑审查",
+    "status": "Success",
+    "time_cost_sec": 93.33,
+    "tokens": 13326,
+    "output_preview": " ## 审查报告  ### 严重问题 (Critical Issues)  | 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 | |------|------|----------|---..."
+  },
+  {
+    "id": 4,
+    "category": "异常容错（语法错误）",
+    "status": "Success",
+    "time_cost_sec": 44.47,
+    "tokens": 9750,
+    "output_preview": " ## 审查报告  ### 严重问题 (Critical Issues)  | 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 | |------|------|----------|---..."
+  },
+  {
+    "id": 5,
+    "category": "异常容错（文件不存在）",
+    "status": "Success",
+    "time_cost_sec": 24.87,
+    "tokens": 10207,
+    "output_preview": " ## 审查报告  ### 严重问题 (Critical Issues)  | 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 | |------|------|----------|---..."
+  },
+  {
+    "id": 6,
+    "category": "Git Diff 感知",
+    "status": "Success",
+    "time_cost_sec": 73.74,
+    "tokens": 21038,
+    "output_preview": "..."
+  }
+]
