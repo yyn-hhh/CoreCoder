@@ -16,6 +16,7 @@ from .llm import LLM, LiteLLM
 from .config import Config
 from .session import save_session, load_session, list_sessions
 from . import __version__
+from .tools.mcp_tool import MCPTool
 
 console = Console()
 
@@ -282,6 +283,10 @@ def _repl(agent: Agent, config: Config):
         except Exception as e:
             console.print(f"\n[red]Error: {e}[/red]")
 
+    for tool in agent.tools:
+        if isinstance(tool, MCPTool):
+            tool.close()
+
 
 def _show_help():
     console.print(Panel(
@@ -308,4 +313,6 @@ def _show_help():
 def _brief(kwargs: dict, maxlen: int = 80) -> str:
     s = ", ".join(f"{k}={repr(v)[:40]}" for k, v in kwargs.items())
     return s[:maxlen] + ("..." if len(s) > maxlen else "")
+
+#测试用
 

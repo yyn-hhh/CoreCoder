@@ -119,6 +119,8 @@ class ASTAnalyzerTool(Tool):
             return node.id
         elif isinstance(node, ast.Attribute):
             return f"{node.value.id}.{node.attr}" if hasattr(node.value, 'id') else str(node.attr)
+        elif isinstance(node, ast.Call):
+            return self._get_decorator_name(node.func) 
         return str(node)
 
     def _get_base_name(self, node):

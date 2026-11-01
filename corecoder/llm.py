@@ -41,7 +41,7 @@ class LLMResponse:
                     "type": "function",
                     "function": {
                         "name": tc.name,
-                        "arguments": json.dumps(tc.arguments),
+                        "arguments": json.dumps(tc.arguments), 
                     },
                 }
                 for tc in self.tool_calls
@@ -92,8 +92,8 @@ class LLM:
         self.model = model
         self.client = OpenAI(api_key=api_key, base_url=base_url)
         self.extra = kwargs  # temperature, max_tokens, etc.
-        self.total_prompt_tokens = 0
-        self.total_completion_tokens = 0
+        self.total_prompt_tokens = 0  #累计输入token数
+        self.total_completion_tokens = 0  #累计输出token数
 
     @property
     def estimated_cost(self) -> float | None:
@@ -175,7 +175,7 @@ class LLM:
         for idx in sorted(tc_map):
             raw = tc_map[idx]
             try:
-                args = json.loads(raw["args"])
+                args = json.loads(raw["args"]) 
             except (json.JSONDecodeError, KeyError):
                 args = {}
             parsed.append(ToolCall(id=raw["id"], name=raw["name"], arguments=args))
