@@ -17,8 +17,8 @@ from .rag_tool import RAGSearchTool
 ALL_TOOLS = [
     BashTool(),
     ReadFileTool(),
-    #WriteFileTool(),
-    #EditFileTool(),
+    WriteFileTool(),
+    EditFileTool(),
     GlobTool(),
     GrepTool(),
     AgentTool(),
