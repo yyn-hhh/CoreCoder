@@ -47,7 +47,7 @@ def run_evaluation():
             "status": status,
             "time_cost_sec": round(end_time - start_time, 2),
             "tokens": used_tokens,
-            "output_preview": response[:100].replace("\n", " ") + "..." # 截取前100字预览
+            "output_preview": response
         }
         results.append(result)
         print(f"✅ 状态: {status} | 耗时: {result['time_cost_sec']}s | Token: {used_tokens}")

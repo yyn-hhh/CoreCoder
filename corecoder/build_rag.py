@@ -1,12 +1,15 @@
 import os
+from dotenv import load_dotenv
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
 from openai import OpenAI
 
-_HERE = os.path.dirname(os.path.abspath(__file__)) 
+_HERE = os.path.dirname(os.path.abspath(__file__))
+
+load_dotenv()
 
 client = OpenAI(
-    api_key="sk-zfzzzviasdyfkyviwjfnstbfamovgoncecnldyzyblvuxkjd",
+    api_key=os.getenv("OPENAI_API_KEY", ""),
     base_url="https://api.siliconflow.cn/v1"
 )
 

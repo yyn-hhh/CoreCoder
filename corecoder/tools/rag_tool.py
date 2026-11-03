@@ -1,7 +1,10 @@
 import os
+from dotenv import load_dotenv
 from qdrant_client import QdrantClient
 from openai import OpenAI
 from .base import Tool
+
+load_dotenv()
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 # 注意：这里和 build_rag.py 保持一致，都在 corecoder 目录下
@@ -20,7 +23,10 @@ class RAGSearchTool(Tool):
     }
 
     def execute(self, query: str) -> str:
-        client = OpenAI(api_key="sk-zfzzzviasdyfkyviwjfnstbfamovgoncecnldyzyblvuxkjd", base_url="https://api.siliconflow.cn/v1")
+        api_key = os.getenv("OPENAI_API_KEY", "")
+        if not api_key:
+            return "RAG search unavailable: OPENAI_API_KEY not set in .env"
+        client = OpenAI(api_key=api_key, base_url="https://api.siliconflow.cn/v1")
         qdrant = QdrantClient(path=_QDRANT_PATH)
         
         res = client.embeddings.create(model="BAAI/bge-m3", input=query)
