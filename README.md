@@ -220,32 +220,7 @@ python generate_report.py
 - `eval_results.json`：原始评测结果
 - `review_report.md`：格式化后的 Markdown 评测报告
 
-## 11. 二次开发说明
-
-添加新工具：
-
-1. 在 `corecoder/tools/` 下新建工具类，继承 `corecoder/tools/base.py` 中的 `Tool`；
-2. 实现 `execute(**kwargs) -> str`；
-3. 在 `corecoder/tools/__init__.py` 的 `ALL_TOOLS` 中注册。
-
-修改团队规范：
-
-1. 编辑 `corecoder/coding_rules.txt`；
-2. 执行 `python -m corecoder.build_rag` 重建向量库。
-
-接入外部 MCP Server：
-
-```text
-/mcp npx -y @modelcontextprotocol/server-filesystem .
-```
-
-Windows 下若 `npx` 无法启动，可以尝试：
-
-```text
-/mcp npx.cmd -y @modelcontextprotocol/server-filesystem .
-```
-
-## 12. 项目结构
+## 11. 项目结构
 
 ```text
 CoreCoder/
@@ -275,7 +250,7 @@ CoreCoder/
 └── pyproject.toml
 ```
 
-## 13. 运行测试
+## 12. 运行测试
 
 ```bash
 pytest tests -q
@@ -293,7 +268,7 @@ python -m compileall -q corecoder tests
 ruff check corecoder tests
 ```
 
-## 14. 常见问题
+## 13. 常见问题
 
 **启动提示 `No API key found.`**
 
