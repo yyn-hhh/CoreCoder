@@ -13,9 +13,8 @@ client = OpenAI(
     base_url="https://api.siliconflow.cn/v1"
 )
 
-# 库建在 corecoder 目录下
-# 直接写死绝对路径（注意斜杠方向，Windows 下用 / 或者 \\）
-qdrant = QdrantClient(path="D:/develop/MyAgent/CoreCoder/corecoder/qdrant_data")
+# 库建在 corecoder 目录下，用相对当前文件的路径，clone 后无需修改
+qdrant = QdrantClient(path=os.path.join(_HERE, "qdrant_data"))
 collection_name = "coding_rules"
 
 with open(os.path.join(_HERE, "coding_rules.txt"), "r", encoding="utf-8") as f:

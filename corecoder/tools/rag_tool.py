@@ -8,8 +8,8 @@ load_dotenv()
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 # 注意：这里和 build_rag.py 保持一致，都在 corecoder 目录下
-# 把 _QDRANT_PATH 写死
-_QDRANT_PATH = "D:/develop/MyAgent/CoreCoder/corecoder/qdrant_data"
+# 路径基于当前文件，clone 后无需修改
+_QDRANT_PATH = os.path.abspath(os.path.join(os.path.dirname(_HERE), "qdrant_data"))
 
 class RAGSearchTool(Tool):
     name = "search_coding_rules"
