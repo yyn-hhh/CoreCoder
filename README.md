@@ -8,6 +8,7 @@
 - **12 个内置工具**：文件读写、命令执行、代码检索、Git Diff、AST 分析、RAG 规范检索等。
 - **代码审查模式**：`/review` 一键切换到专职代码审查提示词。
 - **RAG 规范检索**：按团队规范构建向量库，审查时自动检索 `coding_rules.txt`。
+- **长期记忆**：跨会话记住用户偏好与关键信息，自动召回、语义去重，支持按指令遗忘。
 - **MCP 扩展**：运行时通过 `/mcp` 接入外部 MCP Server。
 - **自动化评测**：一键跑测试用例，自动生成 Markdown 评测报告。
 
@@ -199,7 +200,25 @@ python -m corecoder.build_rag
 
 重建时会调用 SiliconFlow 的 `BAAI/bge-m3` Embedding 模型，使用的 Key 同样是 `.env` 中的 `OPENAI_API_KEY`。如果未配置，`search_coding_rules` 会返回明确提示。
 
-## 10. 自动化评测
+## 10. 长期记忆（Long-term Memory）
+
+Agent 会在本地维护一份跨会话的长期记忆，用于记住用户偏好和关键信息：
+
+- **自动保存**：输入包含“记住”“以后都”“请记下”等词时自动保存；包含“我喜欢”“我的项目是”“我习惯”“以后请用”等偏好描述时，保存为 `[用户偏好] ...`。
+- **疑问句保护**：输入以“吗”“呢”“什么”“哪些”结尾，或包含“怎么”“？”等疑问标记时，不会误存为偏好记忆。
+- **自动召回**：每次调用 LLM 前，会用 BGE-M3 向量化当前输入，从 `long_term_memory` 集合检索相关记忆；相似度大于 `0.6` 的记忆会被拼接到 System Prompt 末尾，作为历史记忆参考。
+- **语义去重**：保存前先检索最相似的一条历史记忆，相似度大于 `0.9` 时跳过保存，避免重复写入。
+- **按指令遗忘**：
+  - 输入 `清空记忆` 或 `忘记一切`：清空全部长期记忆。
+  - 输入 `忘记我关于XXX的偏好`：删除与 XXX 相关的偏好记忆；先按相似度（`> 0.85`）匹配，未命中时按关键词兜底匹配，兼容“开发框架 / 框架开发”这类中文词序变体。
+
+数据说明：
+
+- 记忆数据库与 RAG 共用目录 `corecoder/qdrant_data/`，集合名称为 `long_term_memory`，向量维度 `1024`，使用 Cosine 距离。
+- 长期记忆数据位于 `corecoder/qdrant_data/collection/long_term_memory/`，已被 `.gitignore` 排除，不会上传到 GitHub。
+- Embedding 使用 `BAAI/bge-m3`，API Key 复用 `.env` 中的 `OPENAI_API_KEY`。
+
+## 11. 自动化评测
 
 测试用例定义在 `test_cases.json`，评测会自动切换到代码审查模式并统计耗时、token 消耗。
 
@@ -220,7 +239,7 @@ python generate_report.py
 - `eval_results.json`：原始评测结果
 - `review_report.md`：格式化后的 Markdown 评测报告
 
-## 11. 项目结构
+## 12. 项目结构
 
 ```text
 CoreCoder/
@@ -238,6 +257,7 @@ CoreCoder/
 │       ├── ast_analyzer.py      # AST 分析
 │       ├── git_diff.py          # Git Diff 概览
 │       ├── git_diff_file.py     # 单文件 Diff
+│       ├── memory_tool.py       # 跨会话长期记忆
 │       ├── mcp_tool.py          # MCP 客户端
 │       ├── rag_tool.py          # RAG 检索工具
 │       └── ...
@@ -250,7 +270,7 @@ CoreCoder/
 └── pyproject.toml
 ```
 
-## 12. 运行测试
+## 13. 运行测试
 
 ```bash
 pytest tests -q
@@ -268,7 +288,7 @@ python -m compileall -q corecoder tests
 ruff check corecoder tests
 ```
 
-## 13. 常见问题
+## 14. 常见问题
 
 **启动提示 `No API key found.`**
 
@@ -285,6 +305,10 @@ ruff check corecoder tests
 ```bash
 python -m corecoder.build_rag
 ```
+
+**长期记忆不生效或内容混乱**
+
+记忆中保存的是本地 `long_term_memory` 集合。可以在对话中输入 `清空记忆` 一键重置，或输入 `忘记我关于XXX的偏好` 删除指定主题的记忆。
 
 **密钥安全问题**
 

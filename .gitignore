@@ -16,3 +16,6 @@ venv/
 .pytest_cache/
 .tmp/
 README_CN.md
+
+# 本地长期记忆数据不入库，避免把个人记忆上传到 GitHub
+corecoder/qdrant_data/collection/long_term_memory/

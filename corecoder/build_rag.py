@@ -34,4 +34,5 @@ for i, chunk in enumerate(chunks):
     points.append(PointStruct(id=i, vector=res.data[0].embedding, payload={"text": chunk}))
 
 qdrant.upsert(collection_name=collection_name, points=points)
+qdrant.close()
 print("✅ 知识库构建完成！")

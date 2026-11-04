@@ -11,10 +11,12 @@ which means it's done working and ready to report back.
 
 import concurrent.futures
 import inspect
+import re
 from .llm import LLM
 from .tools import ALL_TOOLS
 from .tools.base import Tool
 from .tools.agent import AgentTool
+from .tools.memory_tool import MemoryManager
 from .prompt import system_prompt
 from .context import ContextManager
 from rich.console import Console
@@ -38,6 +40,15 @@ class Agent:
         self._system = system_prompt(self.tools)
         self._system_override = None
 
+        # 从 LLM 客户端中提取 API Key / Base URL，用于长期记忆的 BGE-M3 向量化
+        llm_api_key = getattr(llm, "api_key", None) or getattr(
+            getattr(llm, "client", None), "api_key", None
+        )
+        llm_base_url = getattr(llm, "base_url", None) or getattr(
+            getattr(llm, "client", None), "base_url", None
+        )
+        self.memory = MemoryManager(api_key=llm_api_key, base_url=llm_base_url)
+
         # wire up sub-agent capability
         for t in self.tools:
             if isinstance(t, AgentTool):
@@ -57,8 +68,10 @@ class Agent:
         else:
             print(f"[Mode] Unknown mode: {mode}")
 
-    def _full_messages(self) -> list[dict]:
+    def _full_messages(self, memory: str = "") -> list[dict]:
         system = self._system_override if self._system_override else self._system
+        if memory:
+            system = f"{system}\n\n# 历史记忆（重要参考）:\n{memory}"
         return [{"role": "system", "content": system}] + self.messages
 
     def _tool_schemas(self) -> list[dict]:
@@ -66,12 +79,26 @@ class Agent:
 
     def chat(self, user_input: str, on_token=None, on_tool=None) -> str:
         """Process one user message. May involve multiple LLM/tool rounds."""
+        # 记忆管理指令在最前面拦截，不进入普通对话，也不触发 LLM 或偏好保存
+        if "清空记忆" in user_input or "忘记一切" in user_input:
+            cleared = self.memory.clear_all_memory()
+            return "长期记忆已全部清空。" if cleared else "长期记忆未启用或清空失败，请检查日志。"
+
+        match = re.search(r"忘记我关于(.+?)的偏好", user_input)
+        if match:
+            keyword = match.group(1).strip()
+            deleted = self.memory.delete_memory_by_query(keyword)
+            return f"已删除与“{keyword}”相关的偏好记忆。" if deleted else "未找到需要删除的偏好记忆。"
+
         self.messages.append({"role": "user", "content": user_input})
         self.context.maybe_compress(self.messages, self.llm)
 
+        # 调用 LLM 前召回相关长期记忆，拼接到 System Prompt 末尾
+        recalled_memory = self.memory.recall_memory(user_input)
+
         for _ in range(self.max_rounds):
             resp = self.llm.chat(
-                messages=self._full_messages(),
+                messages=self._full_messages(memory=recalled_memory),
                 tools=self._tool_schemas(),
                 on_token=on_token,
             )
@@ -82,6 +109,7 @@ class Agent:
             # no tool calls -> LLM is done, return text
             if not resp.tool_calls:
                 self.messages.append(resp.message)
+                self._maybe_save_memory(user_input)
                 return resp.content
 
             # tool calls -> execute (parallel when multiple, like Claude Code's
@@ -117,7 +145,29 @@ class Agent:
             # compress if tool outputs are big
             self.context.maybe_compress(self.messages, self.llm)
 
+        self._maybe_save_memory(user_input)
         return "(reached maximum tool-call rounds)"
+
+    def _maybe_save_memory(self, user_input: str):
+        """根据关键词判断是否需要保存长期记忆。"""
+        # 疑问句一律不保存，避免“我喜欢什么框架”被误当成偏好
+        if self._is_question(user_input):
+            return
+
+        active_keywords = ("记住", "以后都", "请记下")
+        preference_keywords = ("我喜欢", "我的项目是", "我习惯", "以后请用")
+        try:
+            if any(k in user_input for k in active_keywords):
+                self.memory.save_memory(user_input)
+            elif any(k in user_input for k in preference_keywords):
+                self.memory.save_memory(f"[用户偏好] {user_input}")
+        except Exception as e:
+            print(f"[Agent] 保存长期记忆失败: {e}")
+
+    def _is_question(self, text: str) -> bool:
+        """判断输入是否像疑问句。"""
+        question_markers = ("吗", "呢", "什么", "哪些", "？", "?", "怎么")
+        return any(marker in text for marker in question_markers)
 
     def _exec_tool(self, tc) -> str:
         """Execute a single tool call, returning the result string."""
@@ -179,5 +229,12 @@ class Agent:
     def reset(self):
         """Clear conversation history."""
         self.messages.clear()
+
+    def close(self):
+        """关闭 Agent 持有的资源。"""
+        try:
+            self.memory.close()
+        except Exception as e:
+            print(f"[Agent] 关闭长期记忆失败: {e}")
 
     # test: 测试 PR 审查功能

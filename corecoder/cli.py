@@ -112,6 +112,8 @@ def _run_once(agent: Agent, prompt: str):
     except Exception as e:
         console.print(f"\n[red]Error: {e}[/red]")
         sys.exit(1)
+    finally:
+        agent.close()
     print()
 
 
@@ -285,6 +287,7 @@ def _repl(agent: Agent, config: Config):
     for tool in agent.tools:   #找到所有 MCPTool 实例并关闭它们
         if isinstance(tool, MCPTool): 
             tool.close()
+    agent.close()
 
 
 def _show_help():
