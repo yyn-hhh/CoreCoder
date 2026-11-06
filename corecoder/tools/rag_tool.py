@@ -10,6 +10,8 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 # 注意：这里和 build_rag.py 保持一致，都在 corecoder 目录下
 # 路径基于当前文件，clone 后无需修改
 _QDRANT_PATH = os.path.abspath(os.path.join(os.path.dirname(_HERE), "qdrant_data"))
+# 相似度低于该值的检索结果直接丢弃，避免弱相关规范混入上下文
+_SCORE_THRESHOLD = 0.6
 
 class RAGSearchTool(Tool):
     name = "search_coding_rules"
@@ -45,8 +47,14 @@ class RAGSearchTool(Tool):
                 query_vector=query_vector,
                 limit=2
             )
-        
-        if not hits:
+
+        # 只保留相似度大于阈值的命中结果
+        valid_hits = [
+            hit for hit in hits
+            if getattr(hit, "score", 0) > _SCORE_THRESHOLD and hit.payload.get("text")
+        ]
+
+        if not valid_hits:
             return "未找到相关规范。"
-        
-        return "\n".join([f"- {hit.payload.get('text', '')} (相似度: {hit.score:.2f})" for hit in hits])
+
+        return "\n".join([f"- {hit.payload.get('text', '')} (相似度: {hit.score:.2f})" for hit in valid_hits])

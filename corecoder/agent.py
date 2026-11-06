@@ -88,7 +88,10 @@ class Agent:
         if match:
             keyword = match.group(1).strip()
             deleted = self.memory.delete_memory_by_query(keyword)
-            return f"已删除与“{keyword}”相关的偏好记忆。" if deleted else "未找到需要删除的偏好记忆。"
+            if deleted:
+                return f"已删除与“{keyword}”相关的偏好记忆。"
+            reason = getattr(self.memory, "last_delete_message", "")
+            return reason or "未找到需要删除的偏好记忆。"
 
         self.messages.append({"role": "user", "content": user_input})
         self.context.maybe_compress(self.messages, self.llm)
