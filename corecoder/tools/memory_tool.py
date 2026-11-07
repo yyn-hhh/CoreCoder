@@ -12,8 +12,8 @@ import uuid
 
 from dotenv import load_dotenv
 from openai import OpenAI
-from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, PointStruct, VectorParams
+from .qdrant_shared import close_qdrant_client, get_qdrant_client
 
 load_dotenv()
 
@@ -46,7 +46,7 @@ class MemoryManager:
             return
 
         try:
-            self.qdrant = QdrantClient(path=_QDRANT_PATH)
+            self.qdrant = get_qdrant_client(_QDRANT_PATH)
             self._ensure_collection()
             self._available = True
         except Exception as e:
@@ -232,10 +232,8 @@ class MemoryManager:
             return False
 
     def close(self):
-        """显式关闭 Qdrant 客户端，避免解释器退出时触发 __del__ 导入错误。"""
-        qdrant = getattr(self, "qdrant", None)
-        if qdrant is not None:
-            try:
-                qdrant.close()
-            except Exception as e:
-                print(f"[MemoryManager] 关闭失败: {e}")
+        """显式关闭共享 Qdrant 客户端，避免解释器退出时触发 __del__ 导入错误。"""
+        try:
+            close_qdrant_client()
+        except Exception as e:
+            print(f"[MemoryManager] 关闭失败: {e}")

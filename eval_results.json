@@ -3,48 +3,75 @@
     "id": 1,
     "category": "安全与规范审查",
     "status": "Success",
-    "time_cost_sec": 30.58,
-    "tokens": 9141,
-    "output_preview": "团队规范中没有明确禁止 `eval()` 的条款，但基于安全最佳实践，强烈建议避免使用 `eval()` 函数。\n\n以下是最终的审查报告更新：\n\n### 审查报告\n\n#### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_style.py` | 3 | 使用了 `eval()` 函数执行用户输入，存在严重的安全风险（如代码注入）。 | 高 | 替换为一个更安全的替代方案，例如解析用户输入为特定类型或使用安全的函数。 |\n\n#### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_style.py` | 1 | 函数名 `dangerous_function` 暗示其可能有风险，建议重命名为更具体的名称（如 `calculate_result`）。 | 命名应清晰反映功能而非问题。 |\n| `test_cases/test_style.py` | 2 | 使用 `print` 调试信息，建议改为日志记录工具（如 `logging`）。 | `print` 不方便控制和过滤调试信息。 |\n\n#### 总结 (Summary)\n- 审查行数: 4\n- 发现的严重问题数: 1\n- 提出的改进建议数: 2\n\n### 关键修复建议\n1. **替换 `eval()`**：\n   - 如果用户输入是数学表达式，可以使用 `ast.literal_eval()` 或解析为数字类型。\n   - 如果涉及复杂逻辑，建议设计更安全的输入解析机制。\n\n2. **日志记录**：\n   - 使用 `logging` 模块替换 `print`，便于后续维护和调试。\n\n如果需要进一步帮助修复或重构代码，请随时告知！"
+    "time_cost_sec": 21.06,
+    "tokens": 8478,
+    "output_preview": "根据代码 `test_cases/test_style.py` 的审查结果，发现以下问题：\n\n## 严重问题 (Critical Issues)\n\n| 文件                   | 行号 | 问题描述                                                                 | 严重程度       | 修复建议                                                                                                                     |\n|------------------------|------|--------------------------------------------------------------------------|----------------|------------------------------------------------------------------------------------------------------------------------------|\n| `test_cases/test_style.py` | 3    | 使用 `eval()` 执行用户输入，存在严重安全风险，可能导致任意代码注入。       | **高危**       | 根据团队规范 **9. 动态代码执行规范**，禁止使用 `eval/exec` 执行不可信或动态拼接的代码。建议改用 `ast.literal_eval` 或其他安全替代方案。 |\n\n## 改进建议 (Improvements)\n\n| 文件                   | 行号 | 改进建议                                                                 | 原因                                                                       |\n|------------------------|------|--------------------------------------------------------------------------|----------------------------------------------------------------------------|\n| `test_cases/test_style.py` | 1    | 函数名 `dangerous_function` 应更改为更具描述性的名称，例如 `evaluate_safe_input`。 | 提高代码可读性和维护性，避免误导其他开发者。                               |\n| `test_cases/test_style.py` | 2    | `print` 语句用于调试，应移除或用日志系统（如 `logging`）替换。            | 生产环境中不宜使用 `print` 直接输出信息，避免干扰正常逻辑或暴露敏感信息。 |\n\n## 总结 (Summary)\n- 审查行数: 4\n- 发现的严重问题数: 1\n- 提出的改进建议数: 2\n\n### 修改建议代码示例\n将 `eval` 替换为 `ast.literal_eval` 的示例：\n```python\nimport ast\n\ndef evaluate_safe_input(user_input):\n    try:\n        result = ast.literal_eval(user_input)\n        return result\n    except (ValueError, SyntaxError) as e:\n        print(f\"Invalid input: {e}\")\n        return None\n```",
+    "tools_used": [
+      "read_file",
+      "search_coding_rules"
+    ],
+    "rag_recalled": [
+      "- 9. 动态代码执行规范：禁止使用 eval/exec 执行不可信或动态拼接的代码，必须使用白名单校验或 ast.literal_eval 等安全替代方案。 (相似度: 0.48)"
+    ]
   },
   {
     "id": 2,
     "category": "RAG 规范召回",
     "status": "Success",
-    "time_cost_sec": 13.71,
-    "tokens": 7481,
-    "output_preview": "### 审查报告\n\n#### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_dict.py` | 2 | 直接使用 `data[\"name\"]` 取值，如果 `\"name\"` 键不存在会抛出 `KeyError` 异常，可能导致服务崩溃。 | 高 | 使用 `data.get(\"name\")` 或 `data.get(\"name\", default_value)` 方法，避免直接取值。 |\n\n#### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_dict.py` | 1 | 函数名 `get_username` 可以更明确，例如 `extract_username_from_data`。 | 命名应更具体，减少歧义。 |\n\n#### 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 1\n- 提出的改进建议数: 1\n\n### 关键修复建议\n1. **字典取值安全性**：\n   - 当前代码直接使用 `data[\"name\"]`，存在 `KeyError` 风险。\n   - **修复方案**：\n     ```python\n     return data.get(\"name\")  # 返回 None 如果键不存在\n     ```\n     或\n     ```python\n     return data.get(\"name\", \"default_username\")  # 返回默认值如果键不存在\n     ```\n\n2. **函数命名优化**：\n   - 建议将函数名从 `get_username` 改为 `extract_username_from_data`，以便更清晰地表达其功能。\n\n如果需要进一步优化或扩展测试用例，请告知！"
+    "time_cost_sec": 19.67,
+    "tokens": 6942,
+    "output_preview": "根据代码 `test_cases/test_dict.py` 的审查结果，发现以下问题：\n\n## 重要注意事项 (Important Notes)\n\n| 文件                   | 行号 | 问题描述                                                                 | 严重程度       | 修复建议                                                                                                                     |\n|------------------------|------|--------------------------------------------------------------------------|----------------|------------------------------------------------------------------------------------------------------------------------------|\n| `test_cases/test_dict.py` | 2    | 直接从字典中通过键名 `\"name\"` 取值，未处理键不存在的异常情况。       | **中危**       | 建议使用 `data.get(\"name\")` 或显式捕获 `KeyError` 异常，以避免因键不存在导致程序崩溃。 |\n\n## 改进建议 (Improvements)\n\n| 文件                   | 行号 | 改进建议                                                                 | 原因                                                                       |\n|------------------------|------|--------------------------------------------------------------------------|----------------------------------------------------------------------------|\n| `test_cases/test_dict.py` | 1    | 函数名 `get_username` 可以更明确，例如改为 `extract_username_from_data`。 | 提高代码可读性，明确函数功能。                               |\n| `test_cases/test_dict.py` | 2    | 为函数添加 Docstring，说明其输入和返回值的意义。            | 提升可维护性，方便其他开发者理解函数用途。 |\n\n## 总结 (Summary)\n- 审查行数: 2\n- 发现的潜在问题数: 1\n- 提出的改进建议数: 2\n\n### 修改建议代码示例\n推荐使用 `data.get(\"name\")` 或显式捕获 `KeyError` 的示例：\n```python\ndef extract_username_from_data(data):\n    \"\"\"从字典中提取用户名。\n    \n    Args:\n        data (dict): 包含用户信息的字典。\n    \n    Returns:\n        str: 用户名，如果键不存在则返回 None。\n    \"\"\"\n    return data.get(\"name\")\n```\n\n或捕获异常的方式：\n```python\ndef extract_username_from_data(data):\n    \"\"\"从字典中提取用户名。\n    \n    Args:\n        data (dict): 包含用户信息的字典。\n    \n    Returns:\n        str: 用户名，如果键不存在则返回 None。\n    \n    Raises:\n        KeyError: 如果键不存在且未使用默认值。\n    \"\"\"\n    try:\n        return data[\"name\"]\n    except KeyError:\n        return None\n```",
+    "tools_used": [
+      "read_file"
+    ],
+    "rag_recalled": []
   },
   {
     "id": 3,
     "category": "基础逻辑审查",
     "status": "Success",
-    "time_cost_sec": 15.0,
-    "tokens": 8416,
-    "output_preview": "### 审查报告\n\n#### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_basic.py` | 2 | 没有处理 `b == 0` 的情况，会导致 `ZeroDivisionError` 异常。 | 高 | 增加异常处理或前置条件检查，确保 `b` 不为零。 |\n\n#### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_basic.py` | 1 | 可以添加函数文档字符串（docstring），说明函数的用途、参数和返回值。 | 提高代码可读性和可维护性。 |\n\n#### 关键修复建议\n1. **`ZeroDivisionError` 处理**：\n   - 修改后的代码可以加入前置条件检查：\n     ```python\n     def divide_numbers(a, b):\n         if b == 0:\n             raise ValueError(\"除数不能为零\")\n         return a / b\n     ```\n   - 或者使用异常处理：\n     ```python\n     def divide_numbers(a, b):\n         try:\n             return a / b\n         except ZeroDivisionError:\n             return \"除数不能为零\"\n     ```\n\n2. **添加文档字符串**：\n   - 示例：\n     ```python\n     def divide_numbers(a, b):\n         \"\"\"计算两个数的除法结果。\n         \n         Args:\n             a: 被除数\n             b: 除数\n             \n         Returns:\n             float: 除法结果\n             \n         Raises:\n             ValueError: 如果除数为零\n         \"\"\"\n         if b == 0:\n             raise ValueError(\"除数不能为零\")\n         return a / b\n     ```\n\n#### 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 1\n- 提出的改进建议数: 1"
+    "time_cost_sec": 18.58,
+    "tokens": 7972,
+    "output_preview": "根据代码 `test_cases/test_basic.py` 的审查结果，发现以下问题和改进建议：  \n\n### **严重问题 (Critical Issues)**  \n\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_basic.py` | 2 | 未处理 `ZeroDivisionError`，当 `b=0` 时会导致程序崩溃。 | **高危** | 添加异常处理或使用 `try-except` 捕获 `ZeroDivisionError`，同时可以返回 `None` 或抛出更具描述性的异常。 |\n\n### **改进建议 (Improvements)**  \n\n| 文件 | 行号 | 建议改进点 | 原因 |\n|------|------|------------|------|\n| `test_cases/test_basic.py` | 1 | 函数名建议改为 `safe_divide`，增强可读性 | 更清晰地表达函数的用途。 |\n| `test_cases/test_basic.py` | - | 添加函数的 Docstring | 增强可维护性，便于调试和多人协作。 |\n\n### **总结 (Summary)**\n- 审查行数：2  \n- 发现的严重问题数：1  \n- 提出的改进建议数：2  \n\n#### **修复示例代码**  \n```python\ndef safe_divide(a, b):\n    \"\"\"安全除法函数，返回 a / b 的结果。\n    \n    Args:\n        a (int/float): 被除数  \n        b (int/float): 除数（非零）  \n    \n    Returns:\n        float: a / b 的结果。若除数为零，返回 None 或抛出 ValueError。\n    \"\"\"\n    if b == 0:\n        return None  # 或 raise ValueError(\"除数不能为零\")\n    return a / b\n```  \n此修复方案既解决了异常问题，也提升了代码的可读性和可靠性。",
+    "tools_used": [
+      "read_file"
+    ],
+    "rag_recalled": []
   },
   {
     "id": 4,
     "category": "异常容错（语法错误）",
     "status": "Success",
-    "time_cost_sec": 15.37,
-    "tokens": 9305,
-    "output_preview": "### 审查报告\n\n#### 严重问题 (Critical Issues)  \n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |  \n|------|------|----------|----------|----------|  \n| `test_cases/test_syntax_error.py` | 1-2 | 函数定义未正确闭合，导致语法错误（`SyntaxError`）。 | 高 | 修复函数定义的语法错误，确保代码可运行。 |  \n\n#### 修复建议  \n当前的函数定义缺少闭合的括号和冒号，修正如下：\n\n```python\ndef broken_function():\n    return True\n```\n\n#### 改进建议  \n| 文件 | 行号 | 改进建议 | 原因 |  \n|------|------|----------|------|  \n| `test_cases/test_syntax_error.py` | 1 | 可以在函数命名时避免使用 `broken_` 前缀，以免误导开发者。 | 命名应清晰反映功能，避免负面暗示。 |  \n\n#### 关键修复步骤  \n1. **语法修复**：  \n   - 确保函数定义完整，包括闭合的括号 `()` 和冒号 `:`。  \n   - 修正后的代码应能被 Python 解释器正常解析。  \n\n2. **函数名优化**：  \n   - 例如，将 `broken_function` 重命名为 `is_valid` 或其他更具描述性的名称。  \n\n#### 总结 (Summary)  \n- **审查行数**: 2  \n- **发现的严重问题数**: 1（语法错误）  \n- **提出的改进建议数**: 1（命名优化）  \n\n如果需要进一步检查或测试，请随时告知！"
+    "time_cost_sec": 15.82,
+    "tokens": 8828,
+    "output_preview": "根据代码 `test_cases/test_syntax_error.py` 的审查结果，发现以下严重问题：\n\n## **严重问题 (Critical Issues)**  \n\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_syntax_error.py` | 1-2 | 语法错误：函数定义缺少闭合括号 `)`，且 `return` 之前缺少逻辑或表达式。 | **高危** | 修正语法错误，确保函数定义完整且 `return` 语句有效。 |\n\n## **修复示例代码**  \n```python\ndef broken_function():\n    \"\"\"修复后的函数，返回 True。\"\"\"\n    return True\n```\n\n### **补充说明**\n1. **行 1-2 语法错误**：  \n   - 原代码中 `def broken_function(` 缺少闭合括号 `)`。  \n   - `return` 语句前没有执行逻辑，属于无效语法。\n\n2. **改进后代码**：  \n   - 添加了完整的函数定义 `def broken_function():`。  \n   - 补充了 Docstring，以提高代码可读性和可维护性。\n\n## **总结 (Summary)**\n- 审查行数：2  \n- 发现的严重问题数：1  \n- 提出的改进建议数：1（语法修复）  \n\n### **建议**  \n在 IDE 或代码检查工具（如 `pylint` 或 `flake8`）中运行静态分析，提前捕获语法错误，避免运行时问题。",
+    "tools_used": [
+      "read_file"
+    ],
+    "rag_recalled": []
   },
   {
     "id": 5,
     "category": "异常容错（文件不存在）",
     "status": "Success",
-    "time_cost_sec": 8.96,
-    "tokens": 5039,
-    "output_preview": "### 审查报告\n\n当前审查的文件 `test_cases/not_exist.py` 不存在，因此无法进行代码审查。以下是建议的后续步骤：\n\n#### 问题说明\n1. **文件不存在**：提供的路径 `test_cases/not_exist.py` 未找到，可能是文件名拼写错误或文件未创建。\n\n#### 建议操作\n1. **确认文件路径**：检查文件是否位于 `test_cases` 目录下，并确保文件名拼写正确。\n2. **创建文件**：如果需要审查的文件尚未创建，请先创建文件并添加代码内容。\n3. **重新审查**：文件准备好后，可以再次提交审查请求。\n\n#### 总结\n- **状态**：文件未找到，无法审查。\n- **下一步**：请确认文件路径或创建文件后重新提交审查请求。\n\n如需进一步帮助，请提供正确的文件路径或文件内容！"
+    "time_cost_sec": 13.08,
+    "tokens": 9496,
+    "output_preview": "## **审查结果**  \n\n### **文件不存在**  \n- **文件路径**: `test_cases/not_exist.py`  \n- **问题**: 文件未找到  \n- **原因**: 该文件可能已被删除、移动或从未创建。  \n\n### **建议**  \n1. **确认文件路径**：  \n   - 检查 `test_cases/` 目录是否存在该文件。  \n   - 如果文件名称拼写有误，请更正后重新审查。  \n\n2. **如果是误删或遗漏**：  \n   - 如果文件本应存在，请从版本控制系统（如 Git）中恢复：\n     ```bash\n     git checkout -- test_cases/not_exist.py\n     ```  \n\n3. **如果是测试用例未创建**：  \n   - 确认是否需要新增该测试文件，并在完成编写后重新审查。  \n\n### **审查总结**  \n- 审查目标文件未找到，建议排查文件是否存在或路径是否正确。  \n- 如需进一步帮助，请提供更多上下文信息（如文件预期用途或代码片段）。",
+    "tools_used": [
+      "read_file"
+    ],
+    "rag_recalled": []
   },
   {
     "id": 6,
     "category": "Git Diff 感知",
     "status": "Success",
-    "time_cost_sec": 21.97,
-    "tokens": 12110,
-    "output_preview": "### 审查报告\n\n#### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `corecoder/build_rag.py` | 1 | 移除了硬编码的 `OPENAI_API_KEY`，但未在 `.env` 文件中提供默认值或说明。 | 中 | 确保 `.env` 文件中包含 `OPENAI_API_KEY` 的说明或默认值，避免运行时错误。 |\n| `corecoder/tools/rag_tool.py` | 23 | 未在 `.env` 文件中提供 `OPENAI_API_KEY` 时返回错误信息，但未明确提示用户如何解决。 | 中 | 在返回的错误信息中添加说明，例如：“请确保在 `.env` 文件中设置 `OPENAI_API_KEY`。” |\n\n#### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `corecoder/build_rag.py` | 9 | 移除了硬编码的 `OPENAI_API_KEY`，改用环境变量，安全性提升。 | 符合安全最佳实践。 |\n| `corecoder/tools/rag_tool.py` | 1 | 添加了 `load_dotenv()` 调用，确保环境变量加载。 | 提高代码的可移植性和安全性。 |\n| `corecoder/prompt.py` | 84 | 明确要求对 `eval`、`print`、`dict[]` 等操作的规范检索。 | 增强代码审查的规范性。 |\n\n#### 总结 (Summary)\n- **审查文件数**: 5\n- **发现的严重问题数**: 2（涉及环境变量和安全问题）\n- **提出的改进建议数**: 3（安全性和规范优化）\n\n### 关键修复建议\n1. **`OPENAI_API_KEY` 管理**：\n   - 在项目的 `.env` 文件中添加以下内容：\n     ```env\n     OPENAI_API_KEY=your_api_key_here\n     ```\n   - 更新项目的 README 或文档，说明如何配置 `.env` 文件。\n\n2. **错误信息优化**：\n   - 在 `rag_tool.py` 中返回的 “RAG search unavailable: OPENAI_API_KEY not set in .env” 后添加更详细的提示：\n     ```python\n     return \"RAG search unavailable: OPENAI_API_KEY not set in .env. Please add it to your .env file.\"\n     ```\n\n3. **规范引用增强**：\n   - 在 `prompt.py` 中明确引用团队规范，例如：\n     ```plaintext\n     根据团队规范，严禁直接使用 `eval` 或硬编码敏感信息。\n     ```\n\n如需进一步优化或扩展功能，请告知！"
+    "time_cost_sec": 23.77,
+    "tokens": 13129,
+    "output_preview": "## 审查报告：工作区未提交的改动\n\n### 1. **核心改进与新增功能**\n- **文件**: `corecoder/agent.py`\n  - 新增 `on_tool_result` 回调参数，允许在工具执行完成后获取结果。\n  - 改进并行工具调用的结果处理逻辑，确保回调的一致性。\n  - **建议**: 为 `on_tool_result` 添加详细的 Docstring，说明其用途和参数结构。\n\n---\n\n### 2. **修复与优化**\n- **文件**: `corecoder/build_rag.py`\n  - 修复 Windows 系统下中文/Emoji 输出的编码问题，通过 `sys.stdout.reconfigure` 设置编码为 UTF-8。\n  - **建议**: 在跨平台兼容性文档中补充此项改动。\n\n---\n\n### 3. **安全规范更新**\n- **文件**: `corecoder/coding_rules.txt`\n  - 新增 **动态代码执行规范** (第 9 条)：禁止使用 `eval/exec`，推荐使用 `ast.literal_eval` 或白名单校验。\n  - **建议**: 在团队内同步此规范，并在代码审查中强制执行。\n\n---\n\n### 4. **重构与性能优化**\n- **文件**: `corecoder/tools/memory_tool.py` 和 `corecoder/tools/rag_tool.py`\n  - 提取 `qdrant_shared` 模块，统一管理 Qdrant 客户端生命周期。\n  - **内存管理优化**：关闭 Qdrant 客户端时主动释放资源，避免 `__del__` 导入错误风险。\n  - **检索逻辑增强**：\n    - 增加候选数量 (`_CANDIDATE_LIMIT`)，提升召回率。\n    - 引入混合检索策略（相似度 + 关键词字面匹配），确保结果相关性。\n  - **建议**: 测试检索性能与结果质量，调整 `_SCORE_THRESHOLD` 和 `_MAX_RESULTS` 参数。\n\n---\n\n### 5. **清理与删除**\n- **文件**: `corecoder/tools/qdrant_data/.lock` 和 `corecoder/tools/qdrant_data/meta.json`\n  - 删除临时锁文件和冗余元数据文件。\n\n---\n\n### 6. **待验证改动**\n- **文件**: `eval_results.json` 和 `generate_report.py`\n  - 内容未完全展示，需进一步验证数据格式和逻辑。\n\n---\n\n## 总结\n- **审查文件数**: 12\n- **关键改进点**:\n  - 新增工具执行回调机制。\n  - 修复跨平台编码问题。\n  - 强化动态代码执行安全规范。\n  - 优化检索算法和资源管理。\n- **建议下一步**:\n  1. 补充缺失的 Docstring 和文档。\n  2. 对新检索逻辑进行全面测试。\n  3. 同步更新团队安全规范文档。",
+    "tools_used": [
+      "git_diff"
+    ],
+    "rag_recalled": []
   }
 ]

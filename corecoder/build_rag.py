@@ -1,4 +1,5 @@
 import os
+import sys
 from dotenv import load_dotenv
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
@@ -7,6 +8,9 @@ from openai import OpenAI
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
 load_dotenv()
+
+# 保证 Windows 下中文/emoji 输出不因终端编码崩溃
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY", ""),
