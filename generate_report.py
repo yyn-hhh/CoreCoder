@@ -7,7 +7,7 @@ def _clean_table_align(text: str) -> str:
     lines = []
     for line in text.splitlines():
         if not line.strip().startswith("|"):
-            lines.append(line)
+            lines.append(line.rstrip())
             continue
         # 暂时保护单元格内的转义管道符，避免被 split 拆开
         safe = line.replace("\\|", "\x00")
@@ -47,10 +47,25 @@ def generate_markdown_report(json_file="eval_results.json", output_file="review_
                 if isinstance(text, str) and text.startswith("- ")
             ]
             rag_text = f"{len(rag_recalled)} 条" if rag_recalled else "无"
+            tool_check_status = item.get("tool_check_status", "N/A")
+            tool_check_msg = item.get("tool_check_msg", "N/A")
+            steps = item.get("steps", "N/A")
+            redundancy = item.get("redundancy", "N/A")
+            loop_circuit_breaker = item.get("loop_circuit_breaker", "N/A")
+            # 新增 Pass@K 字段；旧结果缺失时回退到单次值
+            e2e_status = item.get("e2e_status", item.get("status", "N/A"))
+            pass_count = item.get("pass_count", "N/A")
+            pass_k = item.get("pass_k", "N/A")
+            avg_time = item.get("time_cost_sec", "N/A")
+            avg_tokens = item.get("tokens", "N/A")
             f.write(
-                f"**状态**: {item['status']} | **耗时**: {item['time_cost_sec']}s | "
-                f"**Token**: {item['tokens']} | **工具调用**: {tools_text} | "
-                f"**RAG 召回**: {rag_text}\n\n"
+                f"**状态**: {e2e_status} | **通过**: {pass_count}/{pass_k} | "
+                f"**平均耗时**: {avg_time}s | **平均Token**: {avg_tokens} | "
+                f"**步骤**: {steps} | "
+                f"**冗余**: {redundancy} | **熔断**: {loop_circuit_breaker} | "
+                f"**工具调用**: {tools_text} | "
+                f"**RAG 召回**: {rag_text} | **工具校验**: "
+                f"{tool_check_status} ({tool_check_msg})\n\n"
             )
             
             # 写入完整的审查内容

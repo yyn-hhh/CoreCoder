@@ -10,7 +10,7 @@
 - **RAG 规范检索**：按团队规范构建向量库，审查时自动检索 `coding_rules.txt`。
 - **长期记忆**：跨会话记住用户偏好与关键信息，自动召回、语义去重，支持按指令遗忘。
 - **MCP 扩展**：运行时通过 `/mcp` 接入外部 MCP Server。
-- **自动化评测**：一键跑测试用例，自动生成 Markdown 评测报告。
+- **自动化评测**：Pass@3 稳定性采样，自动生成 Markdown 评测报告。
 
 ## 2. 环境要求
 
@@ -221,13 +221,24 @@ Agent 会在本地维护一份跨会话的长期记忆，用于记住用户偏�
 
 ## 11. 自动化评测
 
-测试用例定义在 `test_cases.json`，评测会自动切换到代码审查模式并统计耗时、token 消耗。
+测试用例定义在 `test_cases.json`，每个用例还可以配置以下校验字段：
+
+- `expected_tools`：期望调用到的工具，漏调会判定失败。
+- `forbidden_tools`：禁止调用的工具，越权调用会判定失败。
+- `expected_tool_args`：期望的具体工具参数，参数不匹配会判定失败。
 
 运行评测：
 
 ```bash
 python run_eval.py
 ```
+
+评测流程（Pass@K 稳定性采样）：
+
+- 每个用例连续采样 3 次（`PASS_K = 3`），每次采样前自动 `agent.reset()`，保证样本相互独立。
+- 记录每次调用的工具轨迹、工具参数、总调用步骤数、连续重复调用（冗余）、工具熔断标记以及 RAG 实际召回的规范文本。
+- 3 次全部通过判定为 `Stable`，部分通过判定为 `Flaky`，全部失败判定为 `Failed`。
+- 最终输出 3 次的平均耗时、平均 Token，以及汇总后的工具轨迹和 RAG 召回数量；单次采样明细保存在 `eval_results.json` 的 `attempts` 中。
 
 生成 Markdown 报告：
 
@@ -237,9 +248,8 @@ python generate_report.py
 
 产物文件：
 
-- `eval_results.json`：原始评测结果
-- `review_report.md`：格式化后的 Markdown 评测报告
-
+- `eval_results.json`：原始评测结果，包含 `e2e_status`、`pass_count`、`pass_k`、`attempts` 等字段。
+- `review_report.md`：格式化后的 Markdown 评测报告，展示稳定性、通过次数、平均耗时、平均 Token、工具校验与 RAG 召回结果。
 ## 12. 项目结构
 
 ```text
