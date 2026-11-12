@@ -69,6 +69,9 @@ OPENAI_API_KEY=你的APIKey
 | `CORECODER_TEMPERATURE` | 否 | 采样温度，默认 `0` |
 | `CORECODER_MAX_CONTEXT` | 否 | 上下文上限，默认 `128000` |
 | `CORECODER_PROVIDER` | 否 | `openai` 或 `litellm` |
+| `JUDGE_API_KEY` | 是* | 评测裁判专用 Key，与主 Agent Key 隔离使用 |
+| `JUDGE_BASE_URL` | 否 | 裁判 Base URL，默认 `https://api.siliconflow.cn/v1` |
+| `JUDGE_MODEL` | 否 | 裁判模型，默认 `Qwen/Qwen2.5-32B-Instruct` |
 
 API Key 读取优先级：`CORECODER_API_KEY` > `OPENAI_API_KEY` > `DEEPSEEK_API_KEY`。
 
@@ -237,8 +240,16 @@ python run_eval.py
 
 - 每个用例连续采样 3 次（`PASS_K = 3`），每次采样前自动 `agent.reset()`，保证样本相互独立。
 - 记录每次调用的工具轨迹、工具参数、总调用步骤数、连续重复调用（冗余）、工具熔断标记以及 RAG 实际召回的规范文本。
+- 每轮产出报告后调用独立裁判模型评估质量，裁判 Key/URL 使用 `JUDGE_API_KEY` / `JUDGE_BASE_URL`，需在 `.env` 中配置；Git Diff 等无直接代码文件的用例跳过裁判，默认给 7 分。
 - 3 次全部通过判定为 `Stable`，部分通过判定为 `Flaky`，全部失败判定为 `Failed`。
 - 最终输出 3 次的平均耗时、平均 Token，以及汇总后的工具轨迹和 RAG 召回数量；单次采样明细保存在 `eval_results.json` 的 `attempts` 中。
+
+评分规则（满分 100 分）：
+
+- 工具与轨迹分（30 分）：熔断直接 0 分；工具校验失败扣 15 分；存在冗余扣 5 分；总步数 > 5 扣 5 分。
+- 性能与成本分（20 分）：平均耗时 > 20s 扣 4 分、> 30s 扣 8 分；平均 Token > 8000 扣 4 分、> 12000 扣 8 分。
+- 稳定性分（20 分）：Pass@3 全过 20 分，过 2 次 10 分，过 1 次 5 分，全挂 0 分。
+- 报告质量分（30 分）：三次裁判原始平均分 × 3；任一次出现幻觉则该维分清零。
 
 生成 Markdown 报告：
 
@@ -248,8 +259,8 @@ python generate_report.py
 
 产物文件：
 
-- `eval_results.json`：原始评测结果，包含 `e2e_status`、`pass_count`、`pass_k`、`attempts` 等字段。
-- `review_report.md`：格式化后的 Markdown 评测报告，展示稳定性、通过次数、平均耗时、平均 Token、工具校验与 RAG 召回结果。
+- `eval_results.json`：原始评测结果，包含 `e2e_status`、`pass_count`、`pass_k`、`tool_score`、`performance_score`、`stability_score`、`quality_score`、`judge_avg_raw`、`judge_reasons`、`has_hallucination`、`attempts` 等字段。
+- `review_report.md`：格式化后的 Markdown 评测报告，展示综合得分、维度得分、报告质量得分、裁判点评、稳定性、工具校验与 RAG 召回结果。
 ## 12. 项目结构
 
 ```text

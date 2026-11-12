@@ -1,152 +1,220 @@
 [
   {
     "id": 1,
-    "category": "安全与规范审查",
-    "status": "Flaky",
-    "e2e_status": "Flaky",
-    "pass_count": 1,
+    "category": "私有组件强制校验",
+    "status": "Stable",
+    "e2e_status": "Stable",
+    "pass_count": 3,
     "pass_k": 3,
-    "time_cost_sec": 17.63,
-    "tokens": 8465,
-    "output_preview": "### 审查报告\n\n#### 文件：`test_cases/test_style.py`\n\n#### 审查行数：4\n\n---\n\n## 严重问题 (Critical Issues)\n\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_style.py` | 3 | 使用了 `eval()` 函数，存在安全风险 | 高 | 禁止使用 `eval()`，改用更安全的方式解析输入，如 `ast.literal_eval` 或其他安全的方法。 |\n\n---\n\n### 详细说明\n\n1. **`eval()` 的使用**：\n   - 在第3行代码中，函数 `dangerous_function` 使用了 `eval(user_input)`，这直接将用户输入作为代码执行。\n   - **安全风险**：`eval()` 可以执行任意 Python 代码，可能导致代码注入攻击或其他安全问题。例如，用户可能输入 `__import__('os').system('rm -rf /')` 这样的恶意代码。\n\n2. **建议修复**：\n   - 如果必须动态执行代码，考虑使用 `ast.literal_eval`（仅限安全的字面量表达式）。\n   - 或者，重新设计逻辑，避免动态代码执行的需求。\n\n---\n\n## 改进建议 (Improvements)\n\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_style.py` | 2 | 移除或替换 `print` 语句 | 测试代码中的 `print` 可能干扰测试输出，建议使用日志或断言。 |\n| `test_cases/test_style.py` | 1 | 重命名函数，明确其危险性 | 函数名 `dangerous_function` 不够直观，建议改为类似 `unsafe_eval_input` 或更清晰表达其功能。 |\n\n---\n\n## 总结 (Summary)\n- 审查行数: 4\n- 发现的严重问题数: 1\n- 提出的改进建议数: 2\n\n### 下一步\n建议开发者立即修复 `eval()` 的使用问题，并考虑其他改进建议。如需进一步验证或更详细的规范，可以调用 `search_coding_rules` 工具查询团队规范中关于 `eval` 和 `print` 的具体要求。",
-    "tools_used": [
-      "read_file",
-      "search_coding_rules",
-      "ast_analyze"
-    ],
-    "rag_recalled": [
-      "- 9. 动态代码执行规范：禁止使用 eval/exec 执行不可信或动态拼接的代码，必须使用白名单校验或 ast.literal_eval 等安全替代方案。 (相似度: 0.48)"
-    ],
-    "tool_check_status": "Failed",
-    "tool_check_msg": "Args_Mismatch: search_coding_rules; Missing: search_coding_rules",
-    "steps": 6,
-    "redundancy": false,
-    "loop_circuit_breaker": false,
-    "attempts": [
-      {
-        "exec_status": "Success",
-        "time_cost_sec": 17.36,
-        "tokens": 8346,
-        "output_preview": "### 审查报告：`test_cases/test_style.py`\n\n#### 1. **严重问题 (Critical Issues)**\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_style.py` | 3 | 使用了 `eval(user_input)`，存在严重安全风险（如代码注入攻击）。 | 高危 | 立即移除 `eval` 的使用，改为其他安全的方式解析用户输入。 |\n\n#### 2. **改进建议 (Improvements)**\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_style.py` | 1 | 函数命名 `dangerous_function` 虽然反映了危险性，但仍建议改进为更具体的名称（如 `calculate_user_input`）。 | 命名应描述功能而非危险性。 |\n| `test_cases/test_style.py` | 2 | 避免在生产代码中使用 `print`，建议替换为日志记录工具（如 `logging`）。 | `print` 不适合用于正式环境。 |\n\n#### 3. **总结 (Summary)**\n- **审查行数**: 4\n- **发现的严重问题数**: 1\n- **提出的改进建议数**: 2\n\n**关键修复建议**:\n- 移除 `eval` 的使用，转而使用其他安全的方式处理用户输入（如 `ast.literal_eval` 或自定义解析逻辑）。\n- 结合团队规范，未来应避免在生产代码中使用 `eval` 和 `print`。",
-        "tools_used": [
-          "read_file",
-          "search_coding_rules"
-        ],
-        "rag_recalled": [],
-        "tool_check_status": "Failed",
-        "tool_check_msg": "Args_Mismatch: search_coding_rules",
-        "steps": 2,
-        "redundancy": false,
-        "loop_circuit_breaker": false
-      },
-      {
-        "exec_status": "Success",
-        "time_cost_sec": 16.73,
-        "tokens": 11275,
-        "output_preview": "## 审查报告\n\n### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| test_cases/test_style.py | 3 | 使用 `eval()` 执行用户输入，存在严重安全风险 | 高危 | 根据团队规范，禁止使用 `eval/exec` 执行不可信或动态拼接的代码。建议替换为 `ast.literal_eval` 或其他安全方案，或移除该功能。 |\n\n### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| test_cases/test_style.py | 全部 | 添加函数文档字符串 (Docstring) | 提高代码可读性和维护性 |\n| test_cases/test_style.py | 2 | 避免使用 `print()` 调试代码 | 调试信息应通过日志系统输出 |\n\n### 总结 (Summary)\n- 审查行数: 4\n- 发现的严重问题数: 1\n- 提出的改进建议数: 2\n\n**关键问题说明**：\n文件 `test_cases/test_style.py` 中使用了 `eval()` 函数执行用户输入，存在严重的安全风险（如代码注入）。团队规范明确禁止此类操作。建议立即修复此问题并遵循安全规范。",
-        "tools_used": [
-          "read_file",
-          "ast_analyze",
-          "search_coding_rules"
-        ],
-        "rag_recalled": [
-          "- 9. 动态代码执行规范：禁止使用 eval/exec 执行不可信或动态拼接的代码，必须使用白名单校验或 ast.literal_eval 等安全替代方案。 (相似度: 0.48)"
-        ],
-        "tool_check_status": "Passed",
-        "tool_check_msg": "OK",
-        "steps": 3,
-        "redundancy": false,
-        "loop_circuit_breaker": false
-      },
-      {
-        "exec_status": "Success",
-        "time_cost_sec": 18.8,
-        "tokens": 5775,
-        "output_preview": "### 审查报告\n\n#### 文件：`test_cases/test_style.py`\n\n#### 审查行数：4\n\n---\n\n## 严重问题 (Critical Issues)\n\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_style.py` | 3 | 使用了 `eval()` 函数，存在安全风险 | 高 | 禁止使用 `eval()`，改用更安全的方式解析输入，如 `ast.literal_eval` 或其他安全的方法。 |\n\n---\n\n### 详细说明\n\n1. **`eval()` 的使用**：\n   - 在第3行代码中，函数 `dangerous_function` 使用了 `eval(user_input)`，这直接将用户输入作为代码执行。\n   - **安全风险**：`eval()` 可以执行任意 Python 代码，可能导致代码注入攻击或其他安全问题。例如，用户可能输入 `__import__('os').system('rm -rf /')` 这样的恶意代码。\n\n2. **建议修复**：\n   - 如果必须动态执行代码，考虑使用 `ast.literal_eval`（仅限安全的字面量表达式）。\n   - 或者，重新设计逻辑，避免动态代码执行的需求。\n\n---\n\n## 改进建议 (Improvements)\n\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_style.py` | 2 | 移除或替换 `print` 语句 | 测试代码中的 `print` 可能干扰测试输出，建议使用日志或断言。 |\n| `test_cases/test_style.py` | 1 | 重命名函数，明确其危险性 | 函数名 `dangerous_function` 不够直观，建议改为类似 `unsafe_eval_input` 或更清晰表达其功能。 |\n\n---\n\n## 总结 (Summary)\n- 审查行数: 4\n- 发现的严重问题数: 1\n- 提出的改进建议数: 2\n\n### 下一步\n建议开发者立即修复 `eval()` 的使用问题，并考虑其他改进建议。如需进一步验证或更详细的规范，可以调用 `search_coding_rules` 工具查询团队规范中关于 `eval` 和 `print` 的具体要求。",
-        "tools_used": [
-          "read_file"
-        ],
-        "rag_recalled": [],
-        "tool_check_status": "Failed",
-        "tool_check_msg": "Missing: search_coding_rules",
-        "steps": 1,
-        "redundancy": false,
-        "loop_circuit_breaker": false
-      }
-    ]
-  },
-  {
-    "id": 2,
-    "category": "RAG 规范召回",
-    "status": "Failed",
-    "e2e_status": "Failed",
-    "pass_count": 0,
-    "pass_k": 3,
-    "time_cost_sec": 17.99,
-    "tokens": 6587,
-    "output_preview": "### 审查报告\n\n#### 概述\n审查文件：`test_cases/test_dict.py`  \n审查行数：2 行  \n代码功能：从字典 `data` 中获取键为 `\"name\"` 的值。\n\n---\n\n### 严重问题 (Critical Issues)\n| 文件                    | 行号 | 问题描述                                                                 | 严重程度 | 修复建议                                                                 |\n|-------------------------|------|--------------------------------------------------------------------------|----------|--------------------------------------------------------------------------|\n| `test_cases/test_dict.py` | 2    | 直接使用 `data[\"name\"]` 访问字典键，可能导致 `KeyError` 异常               | 高       | 使用 `data.get(\"name\")` 并提供默认值，或在访问前检查键是否存在以避免异常。 |\n\n---\n\n### 改进建议 (Improvements)\n| 文件                    | 行号 | 改进建议                                                                 | 原因                                                                 |\n|-------------------------|------|--------------------------------------------------------------------------|----------------------------------------------------------------------|\n| `test_cases/test_dict.py` | 1    | 添加函数文档字符串（Docstring）以说明函数的行为和返回类型。                 | 提高代码可读性和可维护性，遵循 PEP 257。                             |\n| `test_cases/test_dict.py` | 2    | 如果 `data` 可以为 `None`，添加对 `None` 的检查以避免 `TypeError`。         | 增加函数的健壮性，处理边界情况。                                    |\n\n---\n\n### 总结 (Summary)\n- **审查行数**: 2  \n- **发现的严重问题数**: 1  \n- **提出的改进建议数**: 2  \n\n建议优先修复 `KeyError` 问题，以提高代码的可靠性。",
+    "time_cost_sec": 26.69,
+    "tokens": 9739,
+    "output_preview": "根据审查标准和团队内部规范，以下是对 `test_cases/test_private.py` 的审查报告：\n\n---\n\n### **严重问题 (Critical Issues)**\n\n| 文件                     | 行号 | 问题描述                                                                 | 严重程度 | 修复建议                                                                 |\n|--------------------------|------|--------------------------------------------------------------------------|----------|--------------------------------------------------------------------------|\n| `test_private.py`        | 1    | 使用了 `requests` 库进行 HTTP 请求，违反团队规范。                      | 高       | 替换为团队自研的 `xingyu_http` 组件。                                   |\n| `test_private.py`        | 2    | 使用了 `datetime` 模块直接获取当前时间，违反团队规范。                  | 高       | 替换为团队统一的时间获取组件（如 `xy_time.now()`）。                    |\n| `test_private.py`        | 3    | 使用了 `logging` 模块记录日志，违反团队规范。                           | 高       | 替换为团队自研的 `xy_logger` 组件。                                    |\n| `test_private.py`        | 6    | 直接使用 `response.json()` 获取 JSON 数据，未检查字段是否存在。         | 中       | 如涉及核心业务字段，推荐使用 `xingyu_safe_dict.safe_get()` 方法。      |\n\n---\n\n### **改进建议 (Improvements)**\n\n| 文件                     | 行号 | 改进建议                                                               | 原因                                                                 |\n|--------------------------|------|------------------------------------------------------------------------|----------------------------------------------------------------------|\n| `test_private.py`        | 5-12 | 建议对 `fetch_user_data` 函数添加文档字符串（Docstring），说明输入输出。 | 提高代码可读性和维护性。                                            |\n| `test_private.py`        | 5-12 | 建议对异常情况进行捕获和日志记录（使用 `xy_logger`）。                 | 避免函数因未捕获的异常静默失败。                                    |\n\n---\n\n### **总结 (Summary)**\n- **审查行数**: 12\n- **发现的严重问题数**: 4\n- **提出的改进建议数**: 2\n\n**注意事项**：\n1. 请务必根据团队规范，替换所有不合规的代码（如 `requests`、`datetime`、`logging` 等）。\n2. 如果 `response.json()` 中的数据涉及核心业务字段，请使用 `xingyu_safe_dict.safe_get()` 方法以避免潜在问题。",
     "tools_used": [
       "read_file",
       "ast_analyze",
       "search_coding_rules"
     ],
     "rag_recalled": [
-      "- 2. 字典取值规范：从字典中获取可能不存在的键时，必须使用 dict.get(key, default_value) 方法，严禁直接使用 dict[key]，以防止抛出 KeyError 导致服务崩溃。 (相似度: 0.70)"
+      "- 【星宇科技（虚构）内部 Python 业务研发规范 V2.0】\n\n1.网络请求组件规范：所有对外部第三方 API 的 HTTP 请求，严禁直接使用 requests 库或 urllib。 (相似度: 0.55)",
+      "- 2.时间获取规范：严禁在业务代码中直接调用 datetime.datetime.now() 或 time.time()。 (相似度: 0.55)",
+      "- 必须统一使用公司自研的 xy_logger 组件。 (相似度: 0.61)\n- 3.日志打印规范：严禁使用 Python 自带的 logging 模块或 print。 (相似度: 0.54)",
+      "- 6.字典取值规范：从字典中获取可能不存在的键时，除了使用 .get()，如果该字段属于核心业务字段，必须使用内部封装的 xingyu_safe_dict.safe_get() 方法。 (相似度: 0.70)",
+      "- 2.时间获取规范：严禁在业务代码中直接调用 datetime.datetime.now() 或 time.time()。 (相似度: 0.54)",
+      "- 6.字典取值规范：从字典中获取可能不存在的键时，除了使用 .get()，如果该字段属于核心业务字段，必须使用内部封装的 xingyu_safe_dict.safe_get() 方法。 (相似度: 0.45)"
     ],
-    "tool_check_status": "Failed",
-    "tool_check_msg": "Args_Mismatch: search_coding_rules; Missing: search_coding_rules",
-    "steps": 5,
+    "tool_check_status": "Passed",
+    "tool_check_msg": "OK",
+    "steps": 14,
     "redundancy": false,
     "loop_circuit_breaker": false,
+    "score": 80.0,
+    "total_score": 80.0,
+    "tool_score": 25,
+    "performance_score": 12,
+    "stability_score": 20,
+    "quality_score": 23.0,
+    "judge_avg_raw": 7.67,
+    "judge_reasons": [
+      "报告中指出了多个实际存在的问题，但存在一些不准确之处，如文件路径错误。",
+      "报告准确指出了代码中违反规范的问题，但未提及 `.json()` 方法的使用问题，导致完整性扣分。",
+      "报告准确指出了代码中违反规范的问题，但未提及所有严重问题，如未捕获异常。"
+    ],
+    "has_hallucination": false,
     "attempts": [
       {
         "exec_status": "Success",
-        "time_cost_sec": 17.47,
-        "tokens": 8418,
-        "output_preview": "从 `test_cases/test_dict.py` 的审查中，发现了一个严重问题和一项改进建议。\n\n## 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| test_cases/test_dict.py | 2 | 直接使用 `data[\"name\"]` 从字典中取值，未处理键不存在的情况，可能导致 `KeyError` | 高 | 根据团队规范，应使用 `data.get(\"name\", default_value)`，以避免 `KeyError` 异常 |\n\n## 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| test_cases/test_dict.py | 1 | 为 `get_username` 函数添加文档字符串（Docstring），说明其功能和返回值 | 提高代码可读性和可维护性 |\n\n## 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 1\n- 提出的改进建议数: 1\n\n**重要说明**：根据团队内部规范，字典取值必须使用 `dict.get(key, default_value)` 方法以防止 `KeyError` 异常的风险。",
+        "time_cost_sec": 27.33,
+        "tokens": 9638,
+        "output_preview": "根据代码内容和 AST 分析结果，以下是审查报告：\n\n---\n\n### 严重问题 (Critical Issues)\n\n| 文件                     | 行号 | 问题描述                                      | 严重程度 | 修复建议                                                                 |\n|--------------------------|------|---------------------------------------------|----------|--------------------------------------------------------------------------|\n| `test_cases/test_private.py` | 1    | 使用了第三方库 `requests`                 | 高       | **必须** 替换为团队自研的 HTTP 请求组件（如 `xingyu_http`），但未找到相关规范。 |\n| `test_cases/test_private.py` | 3    | 使用了标准库 `logging`                   | 中       | **必须** 替换为团队自研的日志组件（如 `xy_logger`），但未找到相关规范。       |\n| `test_cases/test_private.py` | 5    | 函数 `fetch_user_data` 中没有异常处理    | 高       | **必须** 添加异常处理（如捕获 `requests` 异常或其他可能的网络错误）。     |\n| `test_cases/test_private.py` | 6    | 硬编码 API URL                          | 中       | **必须** 将 URL 配置化为常量或配置文件，避免硬编码。                     |\n| `test_cases/test_private.py` | 10   | 日志记录未格式化时间                   | 低       | **建议** 使用 `datetime` 的标准格式化方法（如 `.strftime()`）记录更清晰的时间。 |\n\n---\n\n### 改进建议 (Improvements)\n\n| 文件                     | 行号 | 改进建议                                    | 原因                                                                 |\n|--------------------------|------|-------------------------------------------|----------------------------------------------------------------------|\n| `test_cases/test_private.py` | 5    | 为函数 `fetch_user_data` 添加文档字符串   | 提高代码可维护性，明确函数用途和返回值的描述。                     |\n| `test_cases/test_private.py` | 6    | 检查 API URL 是否应支持 HTTPS             | 安全性考虑，避免明文传输数据。                                     |\n| `test_cases/test_private.py` | 8    | 简化 `datetime` 的使用                    | `datetime.now()` 的结果可直接用于日志格式化，无需单独赋值变量。    |\n\n---\n\n### 总结 (Summary)\n- 审查行数: 12\n- 发现的严重问题数: 3\n- 提出的改进建议数: 3\n\n**特别说明**:  \n未检索到团队关于 `requests` 和 `logging` 的规范，**强烈建议**进一步确认是否允许使用这些库，或是否有对应的自研组件替换。",
+        "tools_used": [
+          "read_file",
+          "ast_analyze",
+          "search_coding_rules"
+        ],
+        "rag_recalled": [],
+        "tool_check_status": "Passed",
+        "tool_check_msg": "OK",
+        "steps": 3,
+        "redundancy": false,
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 7,
+        "judge_reason": "报告中指出了多个实际存在的问题，但存在一些不准确之处，如文件路径错误。",
+        "hallucination": false
+      },
+      {
+        "exec_status": "Success",
+        "time_cost_sec": 27.11,
+        "tokens": 9789,
+        "output_preview": "## 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| test_cases/test_private.py | 1 | 直接使用 `requests` 库进行 HTTP 请求 | 高危 | 必须使用公司自研的 `xingyu_http` 组件替代。相关规范：网络请求组件规范。 |\n| test_cases/test_private.py | 2 | 直接调用 `datetime.datetime.now()` | 高危 | 必须使用公司自研的时间组件方法替代。相关规范：时间获取规范。 |\n| test_cases/test_private.py | 3 | 使用 Python 自带的 `logging` 模块 | 高危 | 必须使用公司自研的 `xy_logger` 组件。相关规范：日志打印规范。 |\n| test_cases/test_private.py | 5-12 | 函数 `fetch_user_data` 的网络请求未进行异常捕获 | 中危 | 必须捕获 `requests.get` 可能抛出的异常（如超时、连接失败等），并使用公司自研的异常处理组件（如 `xingyu_safe_request`）。 |\n\n## 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| test_cases/test_private.py | 5-12 | 为函数 `fetch_user_data` 添加文档字符串（Docstring），说明功能和返回值 | 提升代码可读性和可维护性 |\n| test_cases/test_private.py | 6, 12 | 使用 `xingyu_safe_dict.safe_get()` 方法替代 `.json()` 方法获取可能的空键值 | 避免潜在的字典取值问题 |\n\n## 总结 (Summary)\n- 审查行数: 12\n- 发现的严重问题数: 4\n- 提出的改进建议数: 2\n\n**关键提示**：  \n1. 涉及网络请求、日志打印、时间获取等操作时，必须严格遵守公司内部规范，使用自研组件替代第三方库。  \n2. 函数中的异常处理至关重要，避免静默失败。",
+        "tools_used": [
+          "read_file",
+          "search_coding_rules"
+        ],
+        "rag_recalled": [
+          "- 【星宇科技（虚构）内部 Python 业务研发规范 V2.0】\n\n1.网络请求组件规范：所有对外部第三方 API 的 HTTP 请求，严禁直接使用 requests 库或 urllib。 (相似度: 0.55)",
+          "- 2.时间获取规范：严禁在业务代码中直接调用 datetime.datetime.now() 或 time.time()。 (相似度: 0.55)",
+          "- 必须统一使用公司自研的 xy_logger 组件。 (相似度: 0.61)\n- 3.日志打印规范：严禁使用 Python 自带的 logging 模块或 print。 (相似度: 0.54)",
+          "- 6.字典取值规范：从字典中获取可能不存在的键时，除了使用 .get()，如果该字段属于核心业务字段，必须使用内部封装的 xingyu_safe_dict.safe_get() 方法。 (相似度: 0.70)"
+        ],
+        "tool_check_status": "Passed",
+        "tool_check_msg": "OK",
+        "steps": 6,
+        "redundancy": false,
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 8,
+        "judge_reason": "报告准确指出了代码中违反规范的问题，但未提及 `.json()` 方法的使用问题，导致完整性扣分。",
+        "hallucination": false
+      },
+      {
+        "exec_status": "Success",
+        "time_cost_sec": 25.63,
+        "tokens": 9789,
+        "output_preview": "根据审查标准和团队内部规范，以下是对 `test_cases/test_private.py` 的审查报告：\n\n---\n\n### **严重问题 (Critical Issues)**\n\n| 文件                     | 行号 | 问题描述                                                                 | 严重程度 | 修复建议                                                                 |\n|--------------------------|------|--------------------------------------------------------------------------|----------|--------------------------------------------------------------------------|\n| `test_private.py`        | 1    | 使用了 `requests` 库进行 HTTP 请求，违反团队规范。                      | 高       | 替换为团队自研的 `xingyu_http` 组件。                                   |\n| `test_private.py`        | 2    | 使用了 `datetime` 模块直接获取当前时间，违反团队规范。                  | 高       | 替换为团队统一的时间获取组件（如 `xy_time.now()`）。                    |\n| `test_private.py`        | 3    | 使用了 `logging` 模块记录日志，违反团队规范。                           | 高       | 替换为团队自研的 `xy_logger` 组件。                                    |\n| `test_private.py`        | 6    | 直接使用 `response.json()` 获取 JSON 数据，未检查字段是否存在。         | 中       | 如涉及核心业务字段，推荐使用 `xingyu_safe_dict.safe_get()` 方法。      |\n\n---\n\n### **改进建议 (Improvements)**\n\n| 文件                     | 行号 | 改进建议                                                               | 原因                                                                 |\n|--------------------------|------|------------------------------------------------------------------------|----------------------------------------------------------------------|\n| `test_private.py`        | 5-12 | 建议对 `fetch_user_data` 函数添加文档字符串（Docstring），说明输入输出。 | 提高代码可读性和维护性。                                            |\n| `test_private.py`        | 5-12 | 建议对异常情况进行捕获和日志记录（使用 `xy_logger`）。                 | 避免函数因未捕获的异常静默失败。                                    |\n\n---\n\n### **总结 (Summary)**\n- **审查行数**: 12\n- **发现的严重问题数**: 4\n- **提出的改进建议数**: 2\n\n**注意事项**：\n1. 请务必根据团队规范，替换所有不合规的代码（如 `requests`、`datetime`、`logging` 等）。\n2. 如果 `response.json()` 中的数据涉及核心业务字段，请使用 `xingyu_safe_dict.safe_get()` 方法以避免潜在问题。",
+        "tools_used": [
+          "read_file",
+          "search_coding_rules"
+        ],
+        "rag_recalled": [
+          "- 【星宇科技（虚构）内部 Python 业务研发规范 V2.0】\n\n1.网络请求组件规范：所有对外部第三方 API 的 HTTP 请求，严禁直接使用 requests 库或 urllib。 (相似度: 0.55)",
+          "- 2.时间获取规范：严禁在业务代码中直接调用 datetime.datetime.now() 或 time.time()。 (相似度: 0.54)",
+          "- 必须统一使用公司自研的 xy_logger 组件。 (相似度: 0.61)\n- 3.日志打印规范：严禁使用 Python 自带的 logging 模块或 print。 (相似度: 0.54)",
+          "- 6.字典取值规范：从字典中获取可能不存在的键时，除了使用 .get()，如果该字段属于核心业务字段，必须使用内部封装的 xingyu_safe_dict.safe_get() 方法。 (相似度: 0.45)"
+        ],
+        "tool_check_status": "Passed",
+        "tool_check_msg": "OK",
+        "steps": 5,
+        "redundancy": false,
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 8,
+        "judge_reason": "报告准确指出了代码中违反规范的问题，但未提及所有严重问题，如未捕获异常。",
+        "hallucination": false
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "category": "RAG 规范召回",
+    "status": "Stable",
+    "e2e_status": "Stable",
+    "pass_count": 3,
+    "pass_k": 3,
+    "time_cost_sec": 24.44,
+    "tokens": 11713,
+    "output_preview": "### 检索结果总结\n1. **`requests`**：\n   - 团队规范明确禁止直接使用 `requests` 库，所有对外部第三方 API 的 HTTP 请求必须使用公司自研组件。\n   - 但没有明确说明自研组件的名称。\n\n2. **`dict.get`**：\n   - 未检索到相关规范，可能意味着团队对字典取值操作没有特殊限制。\n\n### 审查报告\n\n#### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_dict.py` | 1 | 使用了被团队规范禁止的第三方库 `requests` | 高 | 替换为公司的自研 HTTP 请求组件 |\n\n#### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_dict.py` | 5 | 字典取值方式 `user_data.get(\"age\", 0)` 可以保持不变 | 团队未禁止此操作 |\n\n#### 总结 (Summary)\n- 审查行数: 6\n- 发现的严重问题数: 1\n- 提出的改进建议数: 1\n\n**下一步行动**：\n请确认团队推荐的 HTTP 请求组件名称（如 `xingyu_http`），我将协助更新代码以符合规范。",
+    "tools_used": [
+      "read_file",
+      "ast_analyze",
+      "search_coding_rules"
+    ],
+    "rag_recalled": [
+      "- 6.字典取值规范：从字典中获取可能不存在的键时，除了使用 .get()，如果该字段属于核心业务字段，必须使用内部封装的 xingyu_safe_dict.safe_get() 方法。 (相似度: 0.64)",
+      "- 【星宇科技（虚构）内部 Python 业务研发规范 V2.0】\n\n1.网络请求组件规范：所有对外部第三方 API 的 HTTP 请求，严禁直接使用 requests 库或 urllib。 (相似度: 0.55)",
+      "- 6.字典取值规范：从字典中获取可能不存在的键时，除了使用 .get()，如果该字段属于核心业务字段，必须使用内部封装的 xingyu_safe_dict.safe_get() 方法。 (相似度: 0.70)"
+    ],
+    "tool_check_status": "Passed",
+    "tool_check_msg": "OK",
+    "steps": 10,
+    "redundancy": false,
+    "loop_circuit_breaker": false,
+    "score": 80.0,
+    "total_score": 80.0,
+    "tool_score": 25,
+    "performance_score": 12,
+    "stability_score": 20,
+    "quality_score": 23.0,
+    "judge_avg_raw": 7.67,
+    "judge_reasons": [
+      "报告准确指出了使用第三方库和字典取值方法的问题，但未发现其他潜在问题，且建议较为全面。",
+      "报告准确指出了两个严重问题，但缺少对文件名的准确性确认，且建议添加文档字符串的改进建议不是必须项，影响完整性评分。",
+      "准确性较高，指出了使用 `requests` 库的问题，但完整性稍有欠缺，未提及代码中其他潜在问题。"
+    ],
+    "has_hallucination": false,
+    "attempts": [
+      {
+        "exec_status": "Success",
+        "time_cost_sec": 26.45,
+        "tokens": 12803,
+        "output_preview": "### 审查报告\n\n#### 严重问题 (Critical Issues)\n| 文件                | 行号 | 问题描述                                                                               | 严重程度 | 修复建议                                                                                               |\n|---------------------|------|----------------------------------------------------------------------------------------|----------|--------------------------------------------------------------------------------------------------------|\n| test_cases/test_dict.py | 1    | 使用了第三方库 `requests`，未确认是否为公司允许的库。如果公司内部有替代库（如 `xingyu_http`），必须使用替代库。 | 高       | 替换为内部库 `xingyu_http` 或确认 `requests` 为允许使用的库。 |\n| test_cases/test_dict.py | 5    | 使用了 `dict.get()` 方法，未确保是否为核心业务字段。根据团队规范，对于核心业务字段，应使用 `xingyu_safe_dict.safe_get()`。 | 中       | 如果 `\"age\"` 为核心业务字段，替换为 `safe_get(user_data, \"age\", 0)`。否则，可以保留当前实现。 |\n\n#### 改进建议 (Improvements)\n| 文件                | 行号 | 改进建议                                              | 原因                                                                 |\n|---------------------|------|-------------------------------------------------------|----------------------------------------------------------------------|\n| test_cases/test_dict.py | 4    | 为函数 `get_user_age` 添加文档字符串（Docstring）。   | 提高代码的可读性和可维护性，明确函数的输入、输出和用途。       |\n| test_cases/test_dict.py | 5    | 明确 `\"age\"` 是否为核心业务字段，并确保符合团队规范。 | 根据团队规范，核心业务字段必须使用 `xingyu_safe_dict.safe_get()`。 |\n\n#### 总结 (Summary)\n- 审查行数: 6\n- 发现的严重问题数: 2\n- 提出的改进建议数: 2\n\n**下一步建议：**\n1. 确认 `requests` 是否为公司允许使用的库。如果公司有内部替代库，请替换为内部库（如 `xingyu_http`）。\n2. 根据业务场景，确认 `\"age\"` 是否为核心业务字段。如果是，请使用 `safe_get(user_data, \"age\", 0)` 方法。",
         "tools_used": [
           "read_file",
           "ast_analyze",
           "search_coding_rules"
         ],
         "rag_recalled": [
-          "- 2. 字典取值规范：从字典中获取可能不存在的键时，必须使用 dict.get(key, default_value) 方法，严禁直接使用 dict[key]，以防止抛出 KeyError 导致服务崩溃。 (相似度: 0.70)"
+          "- 6.字典取值规范：从字典中获取可能不存在的键时，除了使用 .get()，如果该字段属于核心业务字段，必须使用内部封装的 xingyu_safe_dict.safe_get() 方法。 (相似度: 0.64)"
         ],
-        "tool_check_status": "Failed",
-        "tool_check_msg": "Args_Mismatch: search_coding_rules",
+        "tool_check_status": "Passed",
+        "tool_check_msg": "OK",
         "steps": 3,
         "redundancy": false,
-        "loop_circuit_breaker": false
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 8,
+        "judge_reason": "报告准确指出了使用第三方库和字典取值方法的问题，但未发现其他潜在问题，且建议较为全面。",
+        "hallucination": false
       },
       {
         "exec_status": "Success",
-        "time_cost_sec": 19.81,
-        "tokens": 5727,
-        "output_preview": "从提供的代码 `test_cases/test_dict.py` 中可以看出，这是一个非常简短的测试文件，仅包含一个函数 `get_username`，该函数从字典 `data` 中获取 `\"name\"` 键对应的值并返回。\n\n### 审查报告\n\n#### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| test_cases/test_dict.py | 2 | 直接通过 `data[\"name\"]` 访问字典键，若 `\"name\"` 键不存在会导致 `KeyError` 异常 | 高 | 使用 `data.get(\"name\")` 替代，以避免异常发生 |\n\n#### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| test_cases/test_dict.py | 1 | 为函数 `get_username` 添加文档字符串（Docstring） | 提高代码可读性和可维护性 |\n| test_cases/test_dict.py | 1 | 为函数 `get_username` 添加类型注解 | 增强代码的静态类型检查能力 |\n\n#### 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 1\n- 提出的改进建议数: 2\n\n### 详细说明\n1. **严重问题**：\n   - 在行号 2 处，直接使用 `data[\"name\"]` 访问字典键，如果 `data` 中不存在 `\"name\"` 键，代码会抛出 `KeyError` 异常。建议使用 `data.get(\"name\")`，这样即使在键不存在时也不会抛出异常，而是返回 `None`。\n\n2. **改进建议**：\n   - 在函数 `get_username` 上添加文档字符串（Docstring），说明函数的功能、参数以及返回值，便于其他开发者理解和使用。\n   - 添加类型注解，例如：\n     ```python\n     def get_username(data: dict) -> str:\n     ```\n     这样可以明确输入和输出的类型，提高代码的可读性和可维护性。",
+        "time_cost_sec": 21.35,
+        "tokens": 12720,
+        "output_preview": "### 审查报告\n\n#### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_dict.py` | 1 | 直接使用了第三方库 `requests` | 高 | **必须**替换为公司自研的网络请求组件（如 `xingyu_http`）。引用规范：【星宇科技（虚构）内部 Python 业务研发规范 V2.0】第 1 条。 |\n| `test_cases/test_dict.py` | 5 | 字典取值使用了标准的 `.get()` 方法，未使用公司自研的 `safe_get` | 中 | **必须**使用 `xingyu_safe_dict.safe_get(user_data, \"age\", 0)` 方法。引用规范：【星宇科技（虚构）内部 Python 业务研发规范 V2.0】第 6 条。 |\n\n#### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_dict.py` | 4 | 为函数 `get_user_age` 添加文档字符串（Docstring） | 提高代码可读性和可维护性 |\n\n### 总结 (Summary)\n- 审查行数: 6\n- 发现的严重问题数: 2\n- 提出的改进建议数: 1\n\n**注意**：以上修复建议必须严格按照团队规范执行，尤其是第三方库替换和字典取值操作。",
         "tools_used": [
-          "read_file"
+          "read_file",
+          "ast_analyze",
+          "search_coding_rules"
         ],
-        "rag_recalled": [],
-        "tool_check_status": "Failed",
-        "tool_check_msg": "Missing: search_coding_rules",
-        "steps": 1,
+        "rag_recalled": [
+          "- 【星宇科技（虚构）内部 Python 业务研发规范 V2.0】\n\n1.网络请求组件规范：所有对外部第三方 API 的 HTTP 请求，严禁直接使用 requests 库或 urllib。 (相似度: 0.55)",
+          "- 6.字典取值规范：从字典中获取可能不存在的键时，除了使用 .get()，如果该字段属于核心业务字段，必须使用内部封装的 xingyu_safe_dict.safe_get() 方法。 (相似度: 0.70)"
+        ],
+        "tool_check_status": "Passed",
+        "tool_check_msg": "OK",
+        "steps": 4,
         "redundancy": false,
-        "loop_circuit_breaker": false
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 8,
+        "judge_reason": "报告准确指出了两个严重问题，但缺少对文件名的准确性确认，且建议添加文档字符串的改进建议不是必须项，影响完整性评分。",
+        "hallucination": false
       },
       {
         "exec_status": "Success",
-        "time_cost_sec": 16.7,
-        "tokens": 5615,
-        "output_preview": "### 审查报告\n\n#### 概述\n审查文件：`test_cases/test_dict.py`  \n审查行数：2 行  \n代码功能：从字典 `data` 中获取键为 `\"name\"` 的值。\n\n---\n\n### 严重问题 (Critical Issues)\n| 文件                    | 行号 | 问题描述                                                                 | 严重程度 | 修复建议                                                                 |\n|-------------------------|------|--------------------------------------------------------------------------|----------|--------------------------------------------------------------------------|\n| `test_cases/test_dict.py` | 2    | 直接使用 `data[\"name\"]` 访问字典键，可能导致 `KeyError` 异常               | 高       | 使用 `data.get(\"name\")` 并提供默认值，或在访问前检查键是否存在以避免异常。 |\n\n---\n\n### 改进建议 (Improvements)\n| 文件                    | 行号 | 改进建议                                                                 | 原因                                                                 |\n|-------------------------|------|--------------------------------------------------------------------------|----------------------------------------------------------------------|\n| `test_cases/test_dict.py` | 1    | 添加函数文档字符串（Docstring）以说明函数的行为和返回类型。                 | 提高代码可读性和可维护性，遵循 PEP 257。                             |\n| `test_cases/test_dict.py` | 2    | 如果 `data` 可以为 `None`，添加对 `None` 的检查以避免 `TypeError`。         | 增加函数的健壮性，处理边界情况。                                    |\n\n---\n\n### 总结 (Summary)\n- **审查行数**: 2  \n- **发现的严重问题数**: 1  \n- **提出的改进建议数**: 2  \n\n建议优先修复 `KeyError` 问题，以提高代码的可靠性。",
+        "time_cost_sec": 25.52,
+        "tokens": 9615,
+        "output_preview": "### 检索结果总结\n1. **`requests`**：\n   - 团队规范明确禁止直接使用 `requests` 库，所有对外部第三方 API 的 HTTP 请求必须使用公司自研组件。\n   - 但没有明确说明自研组件的名称。\n\n2. **`dict.get`**：\n   - 未检索到相关规范，可能意味着团队对字典取值操作没有特殊限制。\n\n### 审查报告\n\n#### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_dict.py` | 1 | 使用了被团队规范禁止的第三方库 `requests` | 高 | 替换为公司的自研 HTTP 请求组件 |\n\n#### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_dict.py` | 5 | 字典取值方式 `user_data.get(\"age\", 0)` 可以保持不变 | 团队未禁止此操作 |\n\n#### 总结 (Summary)\n- 审查行数: 6\n- 发现的严重问题数: 1\n- 提出的改进建议数: 1\n\n**下一步行动**：\n请确认团队推荐的 HTTP 请求组件名称（如 `xingyu_http`），我将协助更新代码以符合规范。",
         "tools_used": [
-          "read_file"
+          "read_file",
+          "search_coding_rules"
         ],
-        "rag_recalled": [],
-        "tool_check_status": "Failed",
-        "tool_check_msg": "Missing: search_coding_rules",
-        "steps": 1,
+        "rag_recalled": [
+          "- 【星宇科技（虚构）内部 Python 业务研发规范 V2.0】\n\n1.网络请求组件规范：所有对外部第三方 API 的 HTTP 请求，严禁直接使用 requests 库或 urllib。 (相似度: 0.55)"
+        ],
+        "tool_check_status": "Passed",
+        "tool_check_msg": "OK",
+        "steps": 3,
         "redundancy": false,
-        "loop_circuit_breaker": false
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 7,
+        "judge_reason": "准确性较高，指出了使用 `requests` 库的问题，但完整性稍有欠缺，未提及代码中其他潜在问题。",
+        "hallucination": false
       }
     ]
   },
@@ -157,9 +225,9 @@
     "e2e_status": "Stable",
     "pass_count": 3,
     "pass_k": 3,
-    "time_cost_sec": 14.83,
-    "tokens": 5609,
-    "output_preview": "从提供的内容来看，`test_cases/test_basic.py` 文件是一个非常简单的函数 `divide_numbers`，仅包含两行代码，功能是返回两个数的商。以下是审查结果：\n\n---\n\n### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| test_cases/test_basic.py | 2 | 未处理除数为零的情况，导致运行时抛出 `ZeroDivisionError`。 | 高 | 添加除数是否为0的检查，并根据需求返回适当的值（如 `None`）或抛出更具体的异常（如 `ValueError`）。 |\n\n---\n\n### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| test_cases/test_basic.py | 1-2 | 为函数添加文档字符串（Docstring），说明函数的功能、参数和返回值。 | 提升代码可读性和可维护性。 |\n| test_cases/test_basic.py | 1 | 考虑将函数名改为更具描述性的名称，如 `divide` 或 `divide_two_numbers`。 | 当前名称 `divide_numbers` 稍显冗余。 |\n\n---\n\n### 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 1\n- 提出的改进建议数: 2\n\n建议优先修复严重问题，尤其是除数为零的边界情况，以避免运行时错误。",
+    "time_cost_sec": 20.72,
+    "tokens": 6186,
+    "output_preview": "### 审查报告\n\n#### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_basic.py` | 1-2 | 函数 `divide_numbers` 未处理除数为零的情况，会导致 `ZeroDivisionError` 异常。 | 高 | 添加对除数为零的检查，或使用异常捕获机制处理 `ZeroDivisionError`。 |\n\n#### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_basic.py` | 1 | 建议为函数 `divide_numbers` 添加文档字符串（Docstring），说明其功能和参数。 | 提高代码可读性和可维护性。 |\n| `test_cases/test_basic.py` | 2 | 建议在函数中添加对输入参数类型的检查（如 `isinstance(a, (int, float))`）。 | 避免因非数字输入导致运行时错误。 |\n\n#### 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 1\n- 提出的改进建议数: 2\n\n\n建议尽快修复严重问题，并根据改进建议优化代码。",
     "tools_used": [
       "read_file"
     ],
@@ -169,12 +237,25 @@
     "steps": 3,
     "redundancy": false,
     "loop_circuit_breaker": false,
+    "score": 91.0,
+    "total_score": 91.0,
+    "tool_score": 30,
+    "performance_score": 16,
+    "stability_score": 20,
+    "quality_score": 25.0,
+    "judge_avg_raw": 8.33,
+    "judge_reasons": [
+      "报告准确指出了除数为零和输入类型检查的问题，但对文件路径和内容的描述与实际不符，且存在一些不必要的细节。",
+      "报告准确指出了除零错误的严重问题，并提出了合理的改进建议，但文件路径与实际不符。",
+      "准确性高，指出了除零错误的严重问题；完整性较好，提出了有用的改进建议；但报告中提到的文件名与实际代码不符，略微影响了准确性。"
+    ],
+    "has_hallucination": false,
     "attempts": [
       {
         "exec_status": "Success",
-        "time_cost_sec": 14.26,
-        "tokens": 5578,
-        "output_preview": "## 审查报告\n\n### 严重问题 (Critical Issues)\n\n| 文件                      | 行号 | 问题描述                                      | 严重程度 | 修复建议                                       |\n|---------------------------|------|---------------------------------------------|----------|----------------------------------------------|\n| `test_cases/test_basic.py` | 2    | 函数未处理除零错误，可能导致运行时异常        | 高       | 在函数中添加 `if b == 0:` 检查并抛出异常或返回特殊值 |\n\n### 改进建议 (Improvements)\n\n| 文件                      | 行号 | 改进建议                                     | 原因                                     |\n|---------------------------|------|--------------------------------------------|----------------------------------------|\n| `test_cases/test_basic.py` | 1    | 为函数添加文档字符串以说明其用途和返回值类型 | 提高代码可读性和可维护性               |\n| `test_cases/test_basic.py` | 1    | 将函数名改为更具体的名称，如 `divide`      | 避免命名过于泛化                       |\n\n### 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 1\n- 提出的改进建议数: 2\n\n**注意事项：**\n1. 当前函数 `divide_numbers` 是一个简单的除法函数，但未处理除零异常，这是潜在的高风险问题。\n2. 建议添加测试用例以验证函数的边界条件（如 `b=0`）。\n3. 进一步扩展测试用例以提高覆盖率。",
+        "time_cost_sec": 26.58,
+        "tokens": 6365,
+        "output_preview": "### 审查报告：`test_cases/test_basic.py`\n\n#### 代码概述\n文件 `test_cases/test_basic.py` 只包含一个名为 `divide_numbers` 的简单函数，用于实现两个数的除法运算。\n\n#### 详细审查\n1. **代码风格与可读性**\n   - 函数命名清晰，符合 PEP8 规范。\n   - 缩进和空格使用一致。\n\n2. **逻辑正确性**\n   - **边界情况处理不足**：\n     - 函数未处理除数为零（`b == 0`）的情况，会导致 `ZeroDivisionError` 异常。\n     - 未处理输入为 `None` 或其他非数值类型的情况。\n\n3. **安全性**\n   - 没有硬编码的密钥或其他敏感信息。\n   - 没有使用 `eval()` 或 `exec()`。\n\n4. **可维护性**\n   - 函数功能单一（只做除法运算），符合单一职责原则。\n   - 缺乏文档字符串（Docstring），建议补充。\n\n5. **团队内部规范（暂不明确）**\n   - 该函数未涉及数据库操作、文件读写或网络请求，因此无需调用 `search_coding_rules` 工具。\n\n---\n\n### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_basic.py` | 1 | 函数未处理除数为零的情况，会导致 `ZeroDivisionError`。 | 高 | 检查 `b` 是否为 0，若是则抛出 `ValueError` 或返回特定值。 |\n| `test_cases/test_basic.py` | 1 | 未校验输入是否为数值类型，可能导致 `TypeError`。 | 中 | 使用 `isinstance()` 校验输入类型，若非法则抛出异常。 |\n\n### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_basic.py` | 1 | 添加文档字符串（Docstring），说明函数的用途、输入和输出。 | 提高代码可读性和维护性。 |\n| `test_cases/test_basic.py` | 1 | 在测试用例中添加对异常情况的覆盖（如输入为空、除数为零）。 | 完善测试覆盖率。 |\n\n---\n\n### 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 2\n- 提出的改进建议数: 2\n\n请根据上述建议进行修改，确保代码的健壮性和可维护性。",
         "tools_used": [
           "read_file"
         ],
@@ -183,13 +264,16 @@
         "tool_check_msg": "OK",
         "steps": 1,
         "redundancy": false,
-        "loop_circuit_breaker": false
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 8,
+        "judge_reason": "报告准确指出了除数为零和输入类型检查的问题，但对文件路径和内容的描述与实际不符，且存在一些不必要的细节。",
+        "hallucination": false
       },
       {
         "exec_status": "Success",
-        "time_cost_sec": 16.4,
-        "tokens": 5661,
-        "output_preview": "从提供的文件内容来看，`test_cases/test_basic.py` 文件非常简单，仅包含一个函数 `divide_numbers`，该函数接受两个参数 `a` 和 `b`，并返回它们的除法结果。\n\n### 审查报告\n\n#### **严重问题 (Critical Issues)**\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_basic.py` | 1 | 函数 `divide_numbers` 未处理被除数为零的情况（即 `b=0`），可能导致 `ZeroDivisionError`。 | 高 | 在函数中添加对 `b=0` 的检查，并抛出明确的异常或返回特殊值（如 `None` 或 `float('inf')`）。 |\n| `test_cases/test_basic.py` | 1 | 函数缺乏文档字符串（Docstring），开发者无法快速理解函数的用途和使用方式。 | 中 | 添加文档字符串，描述函数的功能、参数和返回值。 |\n\n#### **改进建议 (Improvements)**\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_basic.py` | 1 | 建议为函数参数和返回值添加类型注解（Type Hints）。 | 提高代码的可读性和可维护性，同时支持静态类型检查。 |\n\n#### **总结 (Summary)**\n- 审查行数: 2\n- 发现的严重问题数: 2\n- 提出的改进建议数: 1\n\n**下一步建议：**\n1. 补充函数对 `b=0` 的处理逻辑。\n2. 添加文档字符串和类型注解。\n3. 如果这是一个测试文件，建议补充测试用例以覆盖边界条件（如 `b=0` 的情况）。",
+        "time_cost_sec": 12.74,
+        "tokens": 6115,
+        "output_preview": "根据读取到的文件内容，以下是针对 `test_cases/test_basic.py` 的审查报告：\n\n### 文件内容\n```python\n1    def divide_numbers(a, b):\n2        return a / b\n```\n\n---\n\n## 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_basic.py` | 1-2 | 函数 `divide_numbers` 没有处理除数为零的情况，会引发 `ZeroDivisionError`。 | 高 | 添加对 `b == 0` 的条件检查，并抛出具体异常或返回默认值。 |\n\n---\n\n## 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_basic.py` | 1 | 为函数 `divide_numbers` 添加文档字符串（Docstring），说明其功能、参数和返回值。 | 提高代码可读性和维护性。 |\n| `test_cases/test_basic.py` | 1 | 考虑为函数参数和返回值添加类型注解（例如 `a: float, b: float` -> `float`）。 | 增强代码的可读性和 IDE 提示支持。 |\n\n---\n\n## 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 1\n- 提出的改进建议数: 2",
         "tools_used": [
           "read_file"
         ],
@@ -198,13 +282,16 @@
         "tool_check_msg": "OK",
         "steps": 1,
         "redundancy": false,
-        "loop_circuit_breaker": false
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 9,
+        "judge_reason": "报告准确指出了除零错误的严重问题，并提出了合理的改进建议，但文件路径与实际不符。",
+        "hallucination": false
       },
       {
         "exec_status": "Success",
-        "time_cost_sec": 13.82,
-        "tokens": 5588,
-        "output_preview": "从提供的内容来看，`test_cases/test_basic.py` 文件是一个非常简单的函数 `divide_numbers`，仅包含两行代码，功能是返回两个数的商。以下是审查结果：\n\n---\n\n### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| test_cases/test_basic.py | 2 | 未处理除数为零的情况，导致运行时抛出 `ZeroDivisionError`。 | 高 | 添加除数是否为0的检查，并根据需求返回适当的值（如 `None`）或抛出更具体的异常（如 `ValueError`）。 |\n\n---\n\n### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| test_cases/test_basic.py | 1-2 | 为函数添加文档字符串（Docstring），说明函数的功能、参数和返回值。 | 提升代码可读性和可维护性。 |\n| test_cases/test_basic.py | 1 | 考虑将函数名改为更具描述性的名称，如 `divide` 或 `divide_two_numbers`。 | 当前名称 `divide_numbers` 稍显冗余。 |\n\n---\n\n### 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 1\n- 提出的改进建议数: 2\n\n建议优先修复严重问题，尤其是除数为零的边界情况，以避免运行时错误。",
+        "time_cost_sec": 22.85,
+        "tokens": 6078,
+        "output_preview": "### 审查报告\n\n#### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_basic.py` | 1-2 | 函数 `divide_numbers` 未处理除数为零的情况，会导致 `ZeroDivisionError` 异常。 | 高 | 添加对除数为零的检查，或使用异常捕获机制处理 `ZeroDivisionError`。 |\n\n#### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_basic.py` | 1 | 建议为函数 `divide_numbers` 添加文档字符串（Docstring），说明其功能和参数。 | 提高代码可读性和可维护性。 |\n| `test_cases/test_basic.py` | 2 | 建议在函数中添加对输入参数类型的检查（如 `isinstance(a, (int, float))`）。 | 避免因非数字输入导致运行时错误。 |\n\n#### 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 1\n- 提出的改进建议数: 2\n\n\n建议尽快修复严重问题，并根据改进建议优化代码。",
         "tools_used": [
           "read_file"
         ],
@@ -213,7 +300,10 @@
         "tool_check_msg": "OK",
         "steps": 1,
         "redundancy": false,
-        "loop_circuit_breaker": false
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 8,
+        "judge_reason": "准确性高，指出了除零错误的严重问题；完整性较好，提出了有用的改进建议；但报告中提到的文件名与实际代码不符，略微影响了准确性。",
+        "hallucination": false
       }
     ]
   },
@@ -224,9 +314,9 @@
     "e2e_status": "Stable",
     "pass_count": 3,
     "pass_k": 3,
-    "time_cost_sec": 12.44,
-    "tokens": 5478,
-    "output_preview": "从文件内容来看，`test_cases/test_syntax_error.py` 只有一个函数定义，但存在语法错误。以下是审查结果：\n\n---\n\n### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| test_cases/test_syntax_error.py | 1-2 | 函数定义缺少闭合括号 `)` 导致语法错误 | 高 | 补全缺少的闭合括号 `)`。例如：`def broken_function():` |\n\n---\n\n### 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 1\n- 提出的改进建议数: 0\n\n问题很直接，修复方法也很明确。",
+    "time_cost_sec": 11.01,
+    "tokens": 6016,
+    "output_preview": "## 严重问题 (Critical Issues)\n\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_syntax_error.py` | 1-2 | 函数定义不完整，缺少闭合括号和冒号 | 高 | 修复函数定义，确保语法正确性。例如：`def broken_function():` |\n| `test_cases/test_syntax_error.py` | 2 | 缺少闭合括号 | 高 | 在函数定义行结束时添加闭合括号和冒号 |\n\n## 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 2\n- 提出的改进建议数: 0\n\n### 说明\n文件中存在明显的语法错误，导致函数定义不完整。在 Python 中，函数定义必须以冒号 (`:`) 结束，且圆括号必须闭合。建议立即修复以避免运行时错误。",
     "tools_used": [
       "read_file"
     ],
@@ -236,12 +326,25 @@
     "steps": 3,
     "redundancy": false,
     "loop_circuit_breaker": false,
+    "score": 94.0,
+    "total_score": 94.0,
+    "tool_score": 30,
+    "performance_score": 20,
+    "stability_score": 20,
+    "quality_score": 24.0,
+    "judge_avg_raw": 8.0,
+    "judge_reasons": [
+      "准确性高，指出了函数定义不完整和代码块未对齐的问题；完整性较好，但未指出缩进问题；简洁性良好，内容精炼。",
+      "准确性高，指出了存在的语法错误；完整性较好，但未提及缩进问题；报告略长，可更简洁。",
+      "准确性高，指出了存在的语法错误；完整性较好，但总结中的改进建议数应为2而非0；简洁性尚可，但总结部分可以更简洁。"
+    ],
+    "has_hallucination": false,
     "attempts": [
       {
         "exec_status": "Success",
-        "time_cost_sec": 11.77,
-        "tokens": 5466,
-        "output_preview": "该文件 `test_cases/test_syntax_error.py` 的内容如下：\n\n```python\n1    def broken_function(\n2        return True\n```\n\n### 审查报告\n\n#### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_syntax_error.py` | 2 | 语法错误：函数 `broken_function` 未定义参数列表且直接返回语句 | 高 | 修复函数定义，添加参数列表或正确的函数体 |\n\n#### 改进建议 (Improvements)\n无。\n\n#### 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 1\n- 提出的改进建议数: 0\n\n**建议修复代码：**\n函数定义应包含完整的参数列表（如果有参数）和正确的函数体。例如：\n```python\ndef broken_function():\n    return True\n```",
+        "time_cost_sec": 12.44,
+        "tokens": 6029,
+        "output_preview": "## 审查报告\n\n### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_syntax_error.py` | 1 | 函数定义不完整，缺少参数列表和冒号 | 高 | 修正函数定义，确保参数列表完整并以冒号结尾 |\n| `test_cases/test_syntax_error.py` | 2 | 代码块未对齐 | 高 | 确保代码块正确对齐 |\n\n### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_syntax_error.py` | - | 添加函数文档字符串 (Docstring) | 遵循 PEP8 规范，提高代码可读性 |\n\n### 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 2\n- 提出的改进建议数: 1\n\n建议尽快修正这些问题，以确保代码能够正常运行并符合规范。",
         "tools_used": [
           "read_file"
         ],
@@ -250,13 +353,16 @@
         "tool_check_msg": "OK",
         "steps": 1,
         "redundancy": false,
-        "loop_circuit_breaker": false
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 8,
+        "judge_reason": "准确性高，指出了函数定义不完整和代码块未对齐的问题；完整性较好，但未指出缩进问题；简洁性良好，内容精炼。",
+        "hallucination": false
       },
       {
         "exec_status": "Success",
-        "time_cost_sec": 14.56,
-        "tokens": 5544,
-        "output_preview": "### 审查报告\n\n#### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_syntax_error.py` | 1 | 函数定义 `broken_function` 缺少闭合括号 `)` | 高 | 在行尾添加闭合括号 `)`，例如：`def broken_function():` |\n| `test_cases/test_syntax_error.py` | 2 | 缩进错误，`return` 语句未在函数体内正确缩进 | 高 | 确保 `return` 语句缩进与函数体一致，通常为 4 个空格 |\n\n#### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_syntax_error.py` | - | 添加函数文档字符串（Docstring） | 提高代码可读性，方便其他开发者理解函数用途 |\n\n#### 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 2\n- 提出的改进建议数: 1\n\n建议修复后的代码如下：\n```python\ndef broken_function():\n    \"\"\"示例函数，无实际功能.\"\"\"\n    return True\n```",
+        "time_cost_sec": 10.62,
+        "tokens": 6021,
+        "output_preview": "从读取的文件内容来看，`test_cases/test_syntax_error.py` 存在语法错误（Syntax Error）。以下是具体的审查报告：\n\n## 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| test_syntax_error.py | 1-2 | 函数定义不完整，缺少参数括号关闭和正确的函数体 | 严重 | 补全函数的定义，确保参数括号关闭，并且函数体逻辑正确 |\n\n## 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| test_syntax_error.py | 1-2 | 添加函数参数的闭合括号和完整的函数体 | 修复语法错误 |\n\n## 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 1\n- 提出的改进建议数: 1\n\n### 修复后的代码示例\n```python\ndef broken_function():\n    return True\n```",
         "tools_used": [
           "read_file"
         ],
@@ -265,13 +371,16 @@
         "tool_check_msg": "OK",
         "steps": 1,
         "redundancy": false,
-        "loop_circuit_breaker": false
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 8,
+        "judge_reason": "准确性高，指出了存在的语法错误；完整性较好，但未提及缩进问题；报告略长，可更简洁。",
+        "hallucination": false
       },
       {
         "exec_status": "Success",
-        "time_cost_sec": 11.0,
-        "tokens": 5424,
-        "output_preview": "从文件内容来看，`test_cases/test_syntax_error.py` 只有一个函数定义，但存在语法错误。以下是审查结果：\n\n---\n\n### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| test_cases/test_syntax_error.py | 1-2 | 函数定义缺少闭合括号 `)` 导致语法错误 | 高 | 补全缺少的闭合括号 `)`。例如：`def broken_function():` |\n\n---\n\n### 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 1\n- 提出的改进建议数: 0\n\n问题很直接，修复方法也很明确。",
+        "time_cost_sec": 9.98,
+        "tokens": 5999,
+        "output_preview": "## 严重问题 (Critical Issues)\n\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_syntax_error.py` | 1-2 | 函数定义不完整，缺少闭合括号和冒号 | 高 | 修复函数定义，确保语法正确性。例如：`def broken_function():` |\n| `test_cases/test_syntax_error.py` | 2 | 缺少闭合括号 | 高 | 在函数定义行结束时添加闭合括号和冒号 |\n\n## 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 2\n- 提出的改进建议数: 0\n\n### 说明\n文件中存在明显的语法错误，导致函数定义不完整。在 Python 中，函数定义必须以冒号 (`:`) 结束，且圆括号必须闭合。建议立即修复以避免运行时错误。",
         "tools_used": [
           "read_file"
         ],
@@ -280,7 +389,10 @@
         "tool_check_msg": "OK",
         "steps": 1,
         "redundancy": false,
-        "loop_circuit_breaker": false
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 8,
+        "judge_reason": "准确性高，指出了存在的语法错误；完整性较好，但总结中的改进建议数应为2而非0；简洁性尚可，但总结部分可以更简洁。",
+        "hallucination": false
       }
     ]
   },
@@ -291,9 +403,9 @@
     "e2e_status": "Stable",
     "pass_count": 3,
     "pass_k": 3,
-    "time_cost_sec": 5.42,
-    "tokens": 5307,
-    "output_preview": "文件 `test_cases/not_exist.py` 不存在，无法进行审查。请检查文件路径是否正确，或确认文件是否已创建。如果需要审查其他文件，请提供正确的文件路径。",
+    "time_cost_sec": 5.52,
+    "tokens": 5821,
+    "output_preview": "文件 `test_cases/not_exist.py` 不存在，无法进行审查。请确认文件路径是否正确或文件是否已上传。",
     "tools_used": [
       "read_file"
     ],
@@ -303,12 +415,25 @@
     "steps": 3,
     "redundancy": false,
     "loop_circuit_breaker": false,
+    "score": 100.0,
+    "total_score": 100.0,
+    "tool_score": 30,
+    "performance_score": 20,
+    "stability_score": 20,
+    "quality_score": 30.0,
+    "judge_avg_raw": 10.0,
+    "judge_reasons": [
+      "正确指出文件不存在，诚实可靠。",
+      "正确指出文件不存在，诚实可靠。",
+      "正确指出文件不存在，诚实可靠。"
+    ],
+    "has_hallucination": false,
     "attempts": [
       {
         "exec_status": "Success",
-        "time_cost_sec": 5.94,
-        "tokens": 5319,
-        "output_preview": "审查的文件 `test_cases/not_exist.py` 不存在，无法进行审查。请确认文件路径是否正确或文件是否已存在于目标目录中。如果文件名称或路径有误，请提供正确的文件路径以便进一步审查。\n\n如果需要检查其他文件，请提供相关信息。",
+        "time_cost_sec": 5.81,
+        "tokens": 5822,
+        "output_preview": "审查的文件 `test_cases/not_exist.py` 不存在，无法进行审查。请确认文件路径是否正确或文件是否已上传。",
         "tools_used": [
           "read_file"
         ],
@@ -317,13 +442,16 @@
         "tool_check_msg": "OK",
         "steps": 1,
         "redundancy": false,
-        "loop_circuit_breaker": false
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 10,
+        "judge_reason": "正确指出文件不存在，诚实可靠。",
+        "hallucination": false
       },
       {
         "exec_status": "Success",
-        "time_cost_sec": 5.06,
-        "tokens": 5300,
-        "output_preview": "审查报告中未找到文件 `test_cases/not_exist.py`，因此无法进行代码审查。请确认文件路径是否正确或文件是否存在。如果需要进一步帮助，请提供更多信息。",
+        "time_cost_sec": 5.42,
+        "tokens": 5821,
+        "output_preview": "文件 `test_cases/not_exist.py` 不存在，无法进行审查。请确认文件路径是否正确或文件是否已上传。",
         "tools_used": [
           "read_file"
         ],
@@ -332,13 +460,16 @@
         "tool_check_msg": "OK",
         "steps": 1,
         "redundancy": false,
-        "loop_circuit_breaker": false
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 10,
+        "judge_reason": "正确指出文件不存在，诚实可靠。",
+        "hallucination": false
       },
       {
         "exec_status": "Success",
-        "time_cost_sec": 5.26,
-        "tokens": 5302,
-        "output_preview": "文件 `test_cases/not_exist.py` 不存在，无法进行审查。请检查文件路径是否正确，或确认文件是否已创建。如果需要审查其他文件，请提供正确的文件路径。",
+        "time_cost_sec": 5.34,
+        "tokens": 5821,
+        "output_preview": "文件 `test_cases/not_exist.py` 不存在，无法进行审查。请确认文件路径是否正确或文件是否已上传。",
         "tools_used": [
           "read_file"
         ],
@@ -347,7 +478,10 @@
         "tool_check_msg": "OK",
         "steps": 1,
         "redundancy": false,
-        "loop_circuit_breaker": false
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 10,
+        "judge_reason": "正确指出文件不存在，诚实可靠。",
+        "hallucination": false
       }
     ]
   },
@@ -358,25 +492,37 @@
     "e2e_status": "Stable",
     "pass_count": 3,
     "pass_k": 3,
-    "time_cost_sec": 18.51,
-    "tokens": 13098,
-    "output_preview": "以下是对当前工作区改动的审查报告：\n\n---\n\n## **严重问题 (Critical Issues)**\n\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `run_eval.py` | 58 | 工具轨迹校验逻辑中，未处理 `expected_tools` 或 `forbidden_tools` 为 `None` 的情况。 | 中 | 增加对 `expected_tools` 和 `forbidden_tools` 是否为 `None` 的判断，确保逻辑健壮性。 |\n| `test_cases.json` | - | 测试用例中某些字段缺少默认值（如 `expected_tools` 和 `forbidden_tools`）。 | 低 | 为这些字段提供默认空列表 `[]`，避免未来可能的 `None` 相关错误。 |\n\n---\n\n## **改进建议 (Improvements)**\n\n| 文件 | 行号/位置 | 改进建议 | 原因 |\n|------|----------|----------|------|\n| `generate_report.py` | 47-58 | 建议将动态生成的字段（如 `tool_check_status` 和 `tool_check_msg`）缓存为变量，避免重复计算。 | 提高代码可读性和性能。 |\n| `run_eval.py` | 58 | 工具校验结果可以直接封装为一个函数，复用逻辑。 | 提升代码复用性，减少冗余逻辑。 |\n| `test_cases.json` | - | 文件末尾缺少换行符（No newline at end of file）。 | 遵循 POSIX 标准，确保文件可读性和一致性。 |\n\n---\n\n## **代码风格检查**\n1. **变量命名**：\n   - 所有变量命名清晰，符合 PEP 8 规范。\n2. **注释与文档**：\n   - 部分逻辑（如工具校验）缺乏注释，建议补充。\n3. **异常处理**：\n   - `run_eval.py` 中工具校验逻辑未覆盖所有边界情况（如 `None` 输入）。\n\n---\n\n## **总结 (Summary)**\n- **审查文件数**: 3  \n- **审查行数**: ~100 行  \n- **发现严重问题数**: 2  \n- **提出改进建议数**: 3  \n\n**提示**：  \n- 优先修复 `run_eval.py` 中的逻辑漏洞，确保工具校验的健壮性。  \n- 推荐为 `test_cases.json` 添加默认值，避免未来潜在的运行时错误。\n\n---\n\n### **补充说明**\n1. **README.md** 的改动主要是功能描述和文档的更新，符合团队规范，无需额外审查。\n2. **eval_results.json** 和 **review_report.md** 是自动化评测的输出产物，内容依赖于其他文件的改动，因此审查重点放在逻辑和脚本上。\n\n请根据以上建议进行修复，确保代码质量与安全性！",
+    "time_cost_sec": 19.66,
+    "tokens": 9695,
+    "output_preview": "从 `git_diff` 的结果来看，当前工作区有多个文件被修改。接下来我将逐个审查这些文件的改动内容。为了确保审查的准确性，我将首先读取这些文件的完整内容：\n\n1. **README.md**\n2. **corecoder/coding_rules.txt**\n3. **corecoder/llm.py**\n4. **corecoder/prompt.py**\n5. **eval_results.json**\n6. **generate_report.py**\n7. **review_report.md**\n8. **run_eval.py**\n9. **test_cases.json**\n10. **test_cases/test_dict.py**\n\n我将从 `README.md` 开始审查，随后逐步审查其他文件。是否需要优先审查某个特定文件？例如 `corecoder/llm.py` 或 `test_cases/test_dict.py`？",
     "tools_used": [
-      "git_diff",
-      "git_diff_file"
+      "git_diff"
     ],
     "rag_recalled": [],
     "tool_check_status": "Passed",
     "tool_check_msg": "OK",
-    "steps": 9,
+    "steps": 3,
     "redundancy": false,
     "loop_circuit_breaker": false,
+    "score": 87.0,
+    "total_score": 87.0,
+    "tool_score": 30,
+    "performance_score": 16,
+    "stability_score": 20,
+    "quality_score": 21.0,
+    "judge_avg_raw": 7.0,
+    "judge_reasons": [
+      "无直接代码文件，跳过裁判",
+      "无直接代码文件，跳过裁判",
+      "无直接代码文件，跳过裁判"
+    ],
+    "has_hallucination": false,
     "attempts": [
       {
         "exec_status": "Success",
-        "time_cost_sec": 11.16,
-        "tokens": 6269,
-        "output_preview": "从 `git_diff` 的结果来看，当前工作区有 6 个文件被修改。以下是初步审查的改动内容：\n\n1. **README.md**：更新了自动化评测部分的描述，增加了关于评测流程的详细说明，包括测试用例的配置字段和评测结果的统计方式。\n2. **eval_results.json**：文件内容有所更新，但具体改动内容被截断，需要进一步查看完整 diff。\n3. **generate_report.py**：未提供具体改动内容。\n4. **review_report.md**：未提供具体改动内容。\n5. **run_eval.py**：未提供具体改动内容。\n6. **test_cases.json**：未提供具体改动内容。\n\n### 下一步行动\n1. 优先查看 `eval_results.json` 的完整改动内容。\n2. 逐一审查其他文件的改动。\n\n请确认是否需要我继续深入审查这些文件的改动内容。如果是，请指定文件顺序，我将逐一查看！",
+        "time_cost_sec": 21.87,
+        "tokens": 9750,
+        "output_preview": "### 审查报告\n\n#### 严重问题 (Critical Issues)\n暂无严重问题。\n\n#### 改进建议 (Improvements)\n1. **README.md**\n   - **行号**: 69\n   - **改进建议**: 建议将 `JUDGE_API_KEY` 和其他敏感信息（如 `CORECODER_API_KEY`）的硬编码移除，改用环境变量或配置文件管理。\n   - **原因**: 硬编码的密钥和敏感信息可能导致安全问题，尤其是在代码版本控制中。\n\n2. **README.md**\n   - **行号**: 237\n   - **改进建议**: 在评分规则中，建议明确裁判模型的评分标准，并在报告中展示详细评分细节。\n   - **原因**: 评分标准的透明性有助于用户理解评分结果，并提升报告的可信度。\n\n3. **corecoder/coding_rules.txt**\n   - **行号**: 6\n   - **改进建议**: 确保 `xingyu_safe_dict.safe_get()` 方法的文档清晰，并提供使用示例。\n   - **原因**: 规范的文档化有助于团队成员的快速理解和正确使用。\n\n4. **corecoder/llm.py**\n   - **行号**: 52\n   - **改进建议**: 建议将 `_STREAM_GARBAGE_TOKENS` 定义为不可变集合（如 `frozenset`），以提高性能和安全性。\n   - **原因**: 不可变集合更适合用于常量定义。\n\n5. **corecoder/prompt.py**\n   - **行号**: 77\n   - **改进建议**: 在审查流程中提到的强制前置规则，建议在文档中进一步细化，例如 `read_file` 失败的场景处理。\n   - **原因**: 提升用户对审查流程的理解和执行效率。\n\n#### 总结 (Summary)\n- 审查行数: 约 200 行\n- 发现的严重问题数: 0\n- 提出的改进建议数: 5\n\n**建议用户根据改进建议逐步优化代码，提升代码质量和可维护性。**",
         "tools_used": [
           "git_diff"
         ],
@@ -385,13 +531,16 @@
         "tool_check_msg": "OK",
         "steps": 1,
         "redundancy": false,
-        "loop_circuit_breaker": false
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 7,
+        "judge_reason": "无直接代码文件，跳过裁判",
+        "hallucination": false
       },
       {
         "exec_status": "Success",
-        "time_cost_sec": 14.37,
-        "tokens": 6368,
-        "output_preview": "目前的工作区中有 6 个文件被修改：\n\n1. **README.md**: 更新了 \"自动化评测\" 部分的描述，新增了关于 Pass@3 稳定性采样、用例校验字段 (`expected_tools`, `forbidden_tools`, `expected_tool_args`) 以及评测流程的详细说明。\n2. **eval_results.json**: 文件内容有更新，但 diff 被截断，需要进一步查看。\n3. **generate_report.py**: 文件内容有更新，但 diff 被截断。\n4. **review_report.md**: 文件内容有更新，但 diff 被截断。\n5. **run_eval.py**: 文件内容有更新，但 diff 被截断。\n6. **test_cases.json**: 文件内容有更新，但 diff 被截断。\n\n接下来，我将逐步检查这些文件的完整内容，并从代码质量、正确性、安全性等方面进行审查。先从 `README.md` 开始，因为它已显示了完整的 diff，然后检查其他文件。\n\n## 当前审查进度\n\n- **已审查文件**:\n  - `README.md` (已完成部分审查)\n- **待审查文件**:\n  - `eval_results.json`\n  - `generate_report.py`\n  - `review_report.md`\n  - `run_eval.py`\n  - `test_cases.json`\n\n请确认是否需要优先审查某个文件，或者我将继续按顺序审查其他文件。",
+        "time_cost_sec": 26.14,
+        "tokens": 9847,
+        "output_preview": "### 审查结果\n\n以下是对当前工作区未提交改动的审查报告：\n\n#### 1. `README.md`\n- **改进建议**:\n  | 行号 | 改进建议 | 原因 |\n  |------|----------|------|\n  | 69   | 建议明确说明 `JUDGE_API_KEY` 的获取方式和安全性要求 | 新增的环境变量需要明确其用途和安全要求，避免误用或泄漏。 |\n\n#### 2. `corecoder/coding_rules.txt`\n- **严重问题 (Critical Issues)**:\n  | 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n  |------|------|----------|----------|----------|\n  | 所有行 | 规范更新为 `V2.0`，但未明确新旧规范的迁移计划 | 高 | 应提供一个过渡期说明，并标记哪些规范是新增或修改的。 |\n\n#### 3. `corecoder/llm.py`\n- **改进建议**:\n  | 行号 | 改进建议 | 原因 |\n  |------|----------|------|\n  | 52   | 增加对 `_STREAM_GARBAGE_TOKENS` 的注释，说明其来源 | 帮助后续维护者理解这些乱码 Token 的背景。 |\n  | 152  | 检查 `_clean_stream_text` 是否会对模型正常输出造成误判 | 确保清洗逻辑不会误删有效内容。 |\n\n#### 4. `corecoder/prompt.py`\n- **改进建议**:\n  | 行号 | 改进建议 | 原因 |\n  |------|----------|------|\n  | 77   | 新增的强制前置规则需确保与团队现有的审查流程兼容 | 避免流程冲突。 |\n\n#### 5. `corecoder/qdrant_data/collection/coding_rules/storage.sqlite`\n- **注意**：\n  - 二进制文件无具体改动内容，建议审查其版本控制记录以确保一致性。\n\n#### 6. `eval_results.json`\n- **问题**:\n  - 由于内容复杂，建议使用 `git_diff_file` 查看完整改动内容。\n\n### 总结 (Summary)\n- 审查行数: 约 200 行\n- 发现的严重问题数: 1\n- 提出的改进建议数: 4\n\n下一步可针对需要深入审查的文件（如 `eval_results.json`）调用 `git_diff_file` 查看完整内容。是否需要进一步分析？",
         "tools_used": [
           "git_diff"
         ],
@@ -400,23 +549,28 @@
         "tool_check_msg": "OK",
         "steps": 1,
         "redundancy": false,
-        "loop_circuit_breaker": false
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 7,
+        "judge_reason": "无直接代码文件，跳过裁判",
+        "hallucination": false
       },
       {
         "exec_status": "Success",
-        "time_cost_sec": 30.01,
-        "tokens": 26656,
-        "output_preview": "以下是对当前工作区改动的审查报告：\n\n---\n\n## **严重问题 (Critical Issues)**\n\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `run_eval.py` | 58 | 工具轨迹校验逻辑中，未处理 `expected_tools` 或 `forbidden_tools` 为 `None` 的情况。 | 中 | 增加对 `expected_tools` 和 `forbidden_tools` 是否为 `None` 的判断，确保逻辑健壮性。 |\n| `test_cases.json` | - | 测试用例中某些字段缺少默认值（如 `expected_tools` 和 `forbidden_tools`）。 | 低 | 为这些字段提供默认空列表 `[]`，避免未来可能的 `None` 相关错误。 |\n\n---\n\n## **改进建议 (Improvements)**\n\n| 文件 | 行号/位置 | 改进建议 | 原因 |\n|------|----------|----------|------|\n| `generate_report.py` | 47-58 | 建议将动态生成的字段（如 `tool_check_status` 和 `tool_check_msg`）缓存为变量，避免重复计算。 | 提高代码可读性和性能。 |\n| `run_eval.py` | 58 | 工具校验结果可以直接封装为一个函数，复用逻辑。 | 提升代码复用性，减少冗余逻辑。 |\n| `test_cases.json` | - | 文件末尾缺少换行符（No newline at end of file）。 | 遵循 POSIX 标准，确保文件可读性和一致性。 |\n\n---\n\n## **代码风格检查**\n1. **变量命名**：\n   - 所有变量命名清晰，符合 PEP 8 规范。\n2. **注释与文档**：\n   - 部分逻辑（如工具校验）缺乏注释，建议补充。\n3. **异常处理**：\n   - `run_eval.py` 中工具校验逻辑未覆盖所有边界情况（如 `None` 输入）。\n\n---\n\n## **总结 (Summary)**\n- **审查文件数**: 3  \n- **审查行数**: ~100 行  \n- **发现严重问题数**: 2  \n- **提出改进建议数**: 3  \n\n**提示**：  \n- 优先修复 `run_eval.py` 中的逻辑漏洞，确保工具校验的健壮性。  \n- 推荐为 `test_cases.json` 添加默认值，避免未来潜在的运行时错误。\n\n---\n\n### **补充说明**\n1. **README.md** 的改动主要是功能描述和文档的更新，符合团队规范，无需额外审查。\n2. **eval_results.json** 和 **review_report.md** 是自动化评测的输出产物，内容依赖于其他文件的改动，因此审查重点放在逻辑和脚本上。\n\n请根据以上建议进行修复，确保代码质量与安全性！",
+        "time_cost_sec": 10.96,
+        "tokens": 9488,
+        "output_preview": "从 `git_diff` 的结果来看，当前工作区有多个文件被修改。接下来我将逐个审查这些文件的改动内容。为了确保审查的准确性，我将首先读取这些文件的完整内容：\n\n1. **README.md**\n2. **corecoder/coding_rules.txt**\n3. **corecoder/llm.py**\n4. **corecoder/prompt.py**\n5. **eval_results.json**\n6. **generate_report.py**\n7. **review_report.md**\n8. **run_eval.py**\n9. **test_cases.json**\n10. **test_cases/test_dict.py**\n\n我将从 `README.md` 开始审查，随后逐步审查其他文件。是否需要优先审查某个特定文件？例如 `corecoder/llm.py` 或 `test_cases/test_dict.py`？",
         "tools_used": [
-          "git_diff",
-          "git_diff_file"
+          "git_diff"
         ],
         "rag_recalled": [],
         "tool_check_status": "Passed",
         "tool_check_msg": "OK",
-        "steps": 7,
+        "steps": 1,
         "redundancy": false,
-        "loop_circuit_breaker": false
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 7,
+        "judge_reason": "无直接代码文件，跳过裁判",
+        "hallucination": false
       }
     ]
   }

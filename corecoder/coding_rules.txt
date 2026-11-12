@@ -1,19 +1,15 @@
-【公司内部 Python 安全与研发规范 V1.0】
+【星宇科技（虚构）内部 Python 业务研发规范 V2.0】
 
-1. 异常处理规范：禁止直接使用裸的 except: 或 except Exception 捕获异常。必须明确捕获具体的异常类型（如 ValueError, KeyError），并在捕获后记录日志（使用 logging 模块，禁止使用 print）。
+1.网络请求组件规范：所有对外部第三方 API 的 HTTP 请求，严禁直接使用 requests 库或 urllib。必须且只能使用公司内部基础架构部封装的 xingyu_http 库中的 SafeClient，以便于统一监控、鉴权和熔断。
 
-2. 字典取值规范：从字典中获取可能不存在的键时，必须使用 dict.get(key, default_value) 方法，严禁直接使用 dict[key]，以防止抛出 KeyError 导致服务崩溃。
+2.时间获取规范：严禁在业务代码中直接调用 datetime.datetime.now() 或 time.time()。必须使用 xingyu_time.get_current_timestamp()，该函数内部会自动处理多时区同步和服务器时间漂移补偿。
 
-3. 资源清理规范：所有涉及文件读写、网络连接、数据库会话的代码，必须使用 with 上下文管理器（Context Manager），禁止手动调用 close()，以防止资源泄漏。
+3.日志打印规范：严禁使用 Python 自带的 logging 模块或 print。必须统一使用公司自研的 xy_logger 组件。且日志输出必须为 JSON 结构化格式，必须包含 trace_id 和 user_id，以便 ELK 日志系统检索。
 
-4. 外部 API 调用规范：在调用第三方 API 或外部网络请求时，必须设置超时时间（timeout 参数），且超时时间不得设置超过 10 秒。
+4.异常处理兜底规范：禁止直接抛出原生的 ValueError 或 KeyError。所有业务异常必须继承自公司基础库的 XingyuBaseException，并必须携带业务错误码（格式为 ERR_业务域_数字，例如 ERR_USER_1001）。
 
-5. 依赖导入规范：严禁在代码中使用 from module import *。必须明确导入具体的类或函数。标准库、第三方库、本地模块的导入必须严格分组，组与组之间空一行。
+5.缓存操作规范：使用 Redis 时，严禁裸调 redis-py。必须通过 xingyu_cache.get_client() 获取连接池，且 Key 的命名必须强制带有环境前缀（如 prod:user:1001），严禁在代码中硬编码 Key 字符串。
 
-6. 日志规范：生产环境的代码中绝对禁止使用 print 输出调试信息。必须统一使用 logging 模块，且日志必须包含时间戳和日志级别。
+6.字典取值规范：从字典中获取可能不存在的键时，除了使用 .get()，如果该字段属于核心业务字段，必须使用内部封装的 xingyu_safe_dict.safe_get() 方法。该方法在键缺失时，会自动上报 Metrics 告警，而不是静默返回默认值。
 
-7. 函数命名规范：所有的内部辅助函数，必须以单下划线开头（如 _helper_function）。公共 API 函数名必须使用完整的英文单词，禁止使用拼音或缩写（如禁止使用 get_user_info_by_id 缩写成 get_usr_inf）。
-
-8. 圈复杂度规范：单个函数的 if-elif-else 嵌套层级不得超过 3 层。如果超过，必须使用提前 return 或提取子函数的方式进行重构，严禁写出“箭头型”代码。
-
-9. 动态代码执行规范：禁止使用 eval/exec 执行不可信或动态拼接的代码，必须使用白名单校验或 ast.literal_eval 等安全替代方案。
+7.文件读写规范：所有涉及本地文件读写的操作，必须使用 aiofiles 进行异步非阻塞读写，禁止使用原生同步的 open()，防止阻塞事件循环。

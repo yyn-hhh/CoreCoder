@@ -52,6 +52,19 @@ class LLMResponse:
 # pricing per million tokens: (input, output)
 # sources: openai.com/api/pricing, api-docs.deepseek.com, platform.claude.com,
 #          platform.moonshot.ai, alibabacloud.com/help/en/model-studio
+# 部分模型流式输出会混入乱码 token（如 `》）`），统一在这里清洗
+_STREAM_GARBAGE_TOKENS = ("》）", "》）")
+
+
+def _clean_stream_text(text: str) -> str:
+    """清洗流式输出中的乱码 token，避免污染最终回答。"""
+    if not text:
+        return ""
+    for token in _STREAM_GARBAGE_TOKENS:
+        text = text.replace(token, "")
+    return text
+
+
 _PRICING = {
     # OpenAI - current flagships
     "gpt-5.5": (5, 30),
@@ -152,9 +165,10 @@ class LLM:
 
             # accumulate text
             if delta.content:
-                content_parts.append(delta.content)
+                cleaned = _clean_stream_text(delta.content)
+                content_parts.append(cleaned)
                 if on_token:
-                    on_token(delta.content)
+                    on_token(cleaned)
 
             # accumulate tool calls across chunks
             if delta.tool_calls:
@@ -274,9 +288,10 @@ class LiteLLM(LLM):
             delta = chunk.choices[0].delta
 
             if getattr(delta, "content", None):
-                content_parts.append(delta.content)
+                cleaned = _clean_stream_text(delta.content)
+                content_parts.append(cleaned)
                 if on_token:
-                    on_token(delta.content)
+                    on_token(cleaned)
 
             if getattr(delta, "tool_calls", None):
                 for tc_delta in delta.tool_calls:

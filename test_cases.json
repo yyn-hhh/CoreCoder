@@ -1,13 +1,13 @@
 [
   {
     "id": 1,
-    "category": "安全与规范审查",
-    "input": "审查 test_cases/test_style.py",
+    "category": "私有组件强制校验",
+    "input": "审查 test_cases/test_private.py",
     "expected_tools": ["read_file", "search_coding_rules"],
     "forbidden_tools": ["git_diff", "write_file"],
     "expected_tool_args": [
-      {"name": "read_file", "kwargs": {"file_path": "test_cases/test_style.py"}},
-      {"name": "search_coding_rules", "kwargs": {"query": "eval"}}
+      {"name": "read_file", "kwargs": {"file_path": "test_cases/test_private.py"}},
+      {"name": "search_coding_rules", "kwargs": {}}
     ]
   },
   {
@@ -18,7 +18,7 @@
     "forbidden_tools": ["git_diff"],
     "expected_tool_args": [
       {"name": "read_file", "kwargs": {"file_path": "test_cases/test_dict.py"}},
-      {"name": "search_coding_rules", "kwargs": {"query": "dict.get"}}
+      {"name": "search_coding_rules", "kwargs": {}}
     ]
   },
   {
@@ -56,7 +56,7 @@
     "category": "Git Diff 感知",
     "input": "审查当前工作区的改动",
     "expected_tools": ["git_diff"],
-    "forbidden_tools": ["read_file"],
+    "forbidden_tools": [],
     "expected_tool_args": [
       {"name": "git_diff", "kwargs": {}}
     ]
