@@ -140,6 +140,25 @@ class MemoryManager:
             # 先删除整个集合，再重新创建，确保留下一个空的长期记忆集合
             self.qdrant.delete_collection(collection_name=_COLLECTION_NAME)
             self._ensure_collection()
+            # 本地 Qdrant 模式下，删除集合后立即重建可能残留旧数据；
+            # 额外遍历并按 point id 删除，确保集合真正为空
+            offset = None
+            while True:
+                points, next_offset = self.qdrant.scroll(
+                    collection_name=_COLLECTION_NAME,
+                    limit=100,
+                    offset=offset,
+                    with_payload=False,
+                    with_vectors=False,
+                )
+                if points:
+                    self.qdrant.delete(
+                        collection_name=_COLLECTION_NAME,
+                        points_selector=[p.id for p in points],
+                    )
+                if next_offset is None:
+                    break
+                offset = next_offset
             print("🗑️ [记忆已全部清空]")
             return True
         except Exception as e:

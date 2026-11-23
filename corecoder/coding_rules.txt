@@ -1,15 +1,39 @@
-【星宇科技（虚构）内部 Python 业务研发规范 V2.0】
+【星宇科技内部 Python 业务研发规范 V3.0】
+（注：本规范由基础架构部与质量保障部联合发布，违反严重者将阻断 CI/CD 合并）
 
-1.网络请求组件规范：所有对外部第三方 API 的 HTTP 请求，严禁直接使用 requests 库或 urllib。必须且只能使用公司内部基础架构部封装的 xingyu_http 库中的 SafeClient，以便于统一监控、鉴权和熔断。
+# 一、 网络通信与外部依赖
+1. 网络请求组件规范：所有对外部第三方 API 的 HTTP 请求，严禁直接使用 requests、urllib 或 httpx。必须且只能使用公司基础架构部封装的 xingyu_http.SafeClient，以便于统一监控、鉴权和熔断。
+2. 超时与重试规范：在调用任何外部接口时，必须在 SafeClient 中显式设置 timeout 参数，最大超时时间不得超过 3 秒。严禁使用死循环进行重试，重试策略必须使用 xingyu_http.RetryPolicy，且最大重试次数不得超过 2 次。
+3. 内部 RPC 调用规范：微服务之间的内部调用，严禁通过 HTTP 直连，必须使用公司中间件团队提供的 xingyu_rpc.Client 进行通信。
 
-2.时间获取规范：严禁在业务代码中直接调用 datetime.datetime.now() 或 time.time()。必须使用 xingyu_time.get_current_timestamp()，该函数内部会自动处理多时区同步和服务器时间漂移补偿。
+# 二、 时间与日志处理（强管控区）
+4. 时间获取规范：严禁在业务代码中直接调用 datetime.datetime.now() 或 time.time()。必须使用 xingyu_time.get_current_timestamp()，该函数内部会自动处理多时区同步和服务器时间漂移补偿。
+5. 日期格式化输出：所有返回给前端或写入数据库的日期时间，必须统一使用 UTC+8 时区，格式为 YYYY-MM-DD HH:mm:ss，严禁携带毫秒。
+6. 日志组件规范：严禁使用 Python 自带的 logging 模块或 print。必须统一使用公司自研的 xy_logger 组件，日志输出必须为 JSON 结构化格式。
+7. 日志上下文规范：所有 ERROR 级别的日志，必须包含 trace_id（调用链追踪ID）和 user_id（用户ID），否则日志系统将无法进行链路追踪。
+8. 敏感信息脱敏：严禁在日志或异常堆栈中打印用户的明文密码、手机号、身份证号。必须使用 xingyu_masking.mask() 进行脱敏处理。
 
-3.日志打印规范：严禁使用 Python 自带的 logging 模块或 print。必须统一使用公司自研的 xy_logger 组件。且日志输出必须为 JSON 结构化格式，必须包含 trace_id 和 user_id，以便 ELK 日志系统检索。
+# 三、 数据库与缓存操作（血泪教训区）
+9. 字典取值规范：从字典中获取可能不存在的键时，除了使用 .get()，如果该字段属于核心业务字段，必须使用内部封装的 xingyu_safe_dict.safe_get() 方法。该方法在键缺失时会自动上报 Metrics 告警，而不是静默返回默认值。
+10. SQL 查询规范：严禁在 for 循环中执行单条 SQL 查询（N+1 问题）。必须使用批量查询 IN 语句或 ORM 的预加载（prefetch_related）功能。
+11. 事务红线规范：严禁在数据库事务（Transaction）未提交前，调用外部 RPC 接口或发起 HTTP 网络请求。防止长时间占用数据库连接池导致连接耗尽。
+12. Redis 缓存 Key 规范：使用 Redis 时，严禁硬编码 Key 字符串。必须通过 xingyu_cache.gen_key() 生成，且 Key 的命名必须强制带有环境前缀（如 prod:user:1001）。
+13. 缓存雪崩防护：在批量写入 Redis 缓存时，过期时间 TTL 必须加入随机扰动（如基础时间 + 随机 1-5 分钟），严禁设置相同的固定过期时间。
 
-4.异常处理兜底规范：禁止直接抛出原生的 ValueError 或 KeyError。所有业务异常必须继承自公司基础库的 XingyuBaseException，并必须携带业务错误码（格式为 ERR_业务域_数字，例如 ERR_USER_1001）。
+# 四、 异常处理与安全防御
+14. 异常捕获红线：严禁使用裸的 except: 或 except Exception 捕获异常。必须明确捕获具体的异常类型（如 ValueError, KeyError），并在捕获后记录 ERROR 日志。
+15. 业务异常体系：禁止直接抛出原生的 ValueError 或 KeyError。所有业务异常必须继承自 xingyu_exceptions.XingyuBaseException，并必须携带业务错误码（格式为 ERR_业务域_数字，如 ERR_USER_1001）。
+16. 动态执行红线：严禁使用 eval() 或 exec() 执行任何动态拼接的字符串或不可信代码。如需解析，必须使用 ast.literal_eval 或 JSON 解析。
+17. 文件上传安全：处理用户上传的文件时，必须校验文件后缀名和 MIME 类型（白名单校验），防止上传恶意脚本（如 .sh, .exe）。
+18. SQL 注入防护：所有数据库查询必须使用 ORM 参数化查询，严禁通过字符串拼接（如 f"SELECT * FROM users WHERE id={user_id}"）构造 SQL。
 
-5.缓存操作规范：使用 Redis 时，严禁裸调 redis-py。必须通过 xingyu_cache.get_client() 获取连接池，且 Key 的命名必须强制带有环境前缀（如 prod:user:1001），严禁在代码中硬编码 Key 字符串。
+# 五、 代码风格与工程约束（反直觉区）
+19. 依赖导入规范：严禁使用 from module import *。标准库、第三方库、本地模块的导入必须严格分组，组与组之间空一行。
+20. 圈复杂度红线：单个函数的 if-elif-else 嵌套层级不得超过 3 层。如果超过，必须使用提前 return（Guard Clauses）或提取子函数的方式进行重构，严禁写出“箭头型”代码。
+21. 命名规范：所有的内部辅助函数，必须以单下划线开头（如 _helper_function）。公共 API 函数名必须使用完整的英文单词，禁止使用拼音或无意义的缩写（如禁止使用 get_usr_inf 替代 get_user_info）。
+22. 注释与文档：所有公开的类和方法必须包含 Google 风格的 Docstring。严禁使用毫无意义的中文拼音注释。
 
-6.字典取值规范：从字典中获取可能不存在的键时，除了使用 .get()，如果该字段属于核心业务字段，必须使用内部封装的 xingyu_safe_dict.safe_get() 方法。该方法在键缺失时，会自动上报 Metrics 告警，而不是静默返回默认值。
-
-7.文件读写规范：所有涉及本地文件读写的操作，必须使用 aiofiles 进行异步非阻塞读写，禁止使用原生同步的 open()，防止阻塞事件循环。
+# 六、 并发与异步编程
+23. 异步阻塞红线：在 async 定义的协程函数中，严禁调用 time.sleep()、requests.get() 等同步阻塞方法，必须使用 await asyncio.sleep() 或 aiohttp。
+24. 线程池规范：严禁通过 threading.Thread 手动创建大量线程，必须使用统一的 xingyu_threading.ThreadPoolManager 管理线程池，防止线程泄漏。
+25. 锁释放规范：在使用 threading.Lock 或分布式锁时，必须在 try-finally 块中释放锁，或使用 with 上下文管理器，严禁在锁未释放的情况下 return 或 raise。

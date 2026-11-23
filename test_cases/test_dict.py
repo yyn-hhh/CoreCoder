@@ -1,6 +1,6 @@
-import requests  
-from xingyu_safe_dict import safe_get
-
-def get_user_age(user_data):
-    age = user_data.get("age", 0) 
-    return age
+def get_user_orders(user_ids, db):
+    orders = []
+    for uid in user_ids:
+        user_orders = db.query(f"SELECT * FROM orders WHERE user_id={uid}")
+        orders.append(user_orders)
+    return orders

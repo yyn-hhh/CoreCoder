@@ -1,12 +1,13 @@
 import requests
 import datetime
-import logging
+import threading
 
-def fetch_user_data(user_id):
-    response = requests.get(f"https://api.example.com/users/{user_id}")
-    
+def process_user_data(user_data):
+    response = requests.get("https://api.example.com/data", timeout=5)
     now = datetime.datetime.now()
+    user_id = user_data["id"]
     
-    logging.info(f"Fetched data at {now}")
+    t = threading.Thread(target=lambda: print("hello"))
+    t.start()
     
     return response.json()

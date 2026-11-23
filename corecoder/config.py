@@ -34,6 +34,7 @@ class Config:
     temperature: float = 0.0
     max_context_tokens: int = 128_000
     provider: str = "openai"
+    disable_memory_write: bool = False
 
     @classmethod
     def from_env(cls) -> "Config":
@@ -54,4 +55,6 @@ class Config:
             temperature=float(os.getenv("CORECODER_TEMPERATURE", "0")),
             max_context_tokens=int(os.getenv("CORECODER_MAX_CONTEXT", "128000")),
             provider=os.getenv("CORECODER_PROVIDER", "openai"),
+            disable_memory_write=os.getenv("DISABLE_MEMORY_WRITE", "false").lower()
+            in ("1", "true", "yes"),
         )

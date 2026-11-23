@@ -12,6 +12,7 @@ which means it's done working and ready to report back.
 import concurrent.futures
 import inspect
 import re
+import threading
 from .llm import LLM
 from .tools import ALL_TOOLS
 from .tools.base import Tool
@@ -30,6 +31,7 @@ class Agent:
         tools: list[Tool] | None = None,
         max_context_tokens: int = 128_000,
         max_rounds: int = 50,
+        disable_memory_write: bool = False,
     ):
         self.llm = llm
         self.tools = tools if tools is not None else ALL_TOOLS
@@ -37,6 +39,7 @@ class Agent:
         self.messages: list[dict] = []
         self.context = ContextManager(max_tokens=max_context_tokens)
         self.max_rounds = max_rounds
+        self.disable_memory_write = disable_memory_write
         self._system = system_prompt(self.tools)
         self._system_override = None
 
@@ -118,7 +121,7 @@ class Agent:
             # no tool calls -> LLM is done, return text
             if not resp.tool_calls:
                 self.messages.append(resp.message)
-                self._maybe_save_memory(user_input)
+                self._maybe_save_memory(user_input, resp.content)
                 return resp.content
 
             # tool calls -> execute (parallel when multiple, like Claude Code's
@@ -158,29 +161,51 @@ class Agent:
             # compress if tool outputs are big
             self.context.maybe_compress(self.messages, self.llm)
 
-        self._maybe_save_memory(user_input)
         return "(reached maximum tool-call rounds)"
 
-    def _maybe_save_memory(self, user_input: str):
-        """根据关键词判断是否需要保存长期记忆。"""
-        # 疑问句一律不保存，避免“我喜欢什么框架”被误当成偏好
-        if self._is_question(user_input):
+    def _maybe_save_memory(self, user_input: str, response_content: str):
+        """评测等场景禁用记忆写入时直接跳过，避免污染长期记忆库。"""
+        if getattr(self, "disable_memory_write", False):
             return
+        self._extract_and_save_memory(user_input, response_content)
 
-        active_keywords = ("记住", "以后都", "请记下")
-        preference_keywords = ("我喜欢", "我的项目是", "我习惯", "以后请用")
-        try:
-            if any(k in user_input for k in active_keywords):
-                self.memory.save_memory(user_input)
-            elif any(k in user_input for k in preference_keywords):
-                self.memory.save_memory(f"[用户偏好] {user_input}")
-        except Exception as e:
-            print(f"[Agent] 保存长期记忆失败: {e}")
+    def _extract_memory_intent(self, user_input: str, response_content: str) -> str:
+        """用 LLM 判断本轮对话是否包含可长期保存的偏好、技术栈或工作习惯。"""
+        system_prompt = (
+            "你是一个长期记忆提取器。请分析以下用户输入和 AI 回复，"
+            "提取用户的长期偏好、技术栈或工作习惯。如果只是临时问题或闲聊，"
+            "请只返回 NONE。如果提取到，请用一句精炼的话总结，不要输出其他解释。"
+        )
+        user_content = (
+            "请分析以下用户输入和 AI 回复，提取用户的长期偏好、技术栈或工作习惯。"
+            "如果只是临时问题或闲聊，请返回 'NONE'。如果提取到，请用一句精炼的话总结。\n\n"
+            f"用户输入：\n{user_input}\n\n"
+            f"AI 回复：\n{response_content or ''}"
+        )
+        resp = self.llm.chat(
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_content},
+            ]
+        )
+        return (resp.content or "").strip()
 
-    def _is_question(self, text: str) -> bool:
-        """判断输入是否像疑问句。"""
-        question_markers = ("吗", "呢", "什么", "哪些", "？", "?", "怎么")
-        return any(marker in text for marker in question_markers)
+    def _extract_and_save_memory(self, user_input: str, response_content: str):
+        """后台异步提取隐式记忆，不阻塞主流程；复用 save_memory 的语义去重。"""
+        def _worker():
+            try:
+                if getattr(self, "disable_memory_write", False):
+                    return
+                if not getattr(self.memory, "_available", False):
+                    return
+                memory_text = self._extract_memory_intent(user_input, response_content)
+                memory_text = (memory_text or "").strip().strip("'\"")
+                if memory_text and memory_text.upper() != "NONE":
+                    self.memory.save_memory(memory_text)
+            except Exception as e:
+                print(f"[Agent] 提取/保存长期记忆失败: {e}")
+
+        threading.Thread(target=_worker, daemon=True).start()
 
     def _exec_tool(self, tc) -> str:
         """Execute a single tool call, returning the result string."""

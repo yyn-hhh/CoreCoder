@@ -1,104 +1,101 @@
 [
   {
     "id": 1,
-    "category": "私有组件强制校验",
+    "category": "多违规复合场景（强依赖 RAG 双路）",
     "status": "Stable",
     "e2e_status": "Stable",
     "pass_count": 3,
     "pass_k": 3,
-    "time_cost_sec": 26.69,
-    "tokens": 9739,
-    "output_preview": "根据审查标准和团队内部规范，以下是对 `test_cases/test_private.py` 的审查报告：\n\n---\n\n### **严重问题 (Critical Issues)**\n\n| 文件                     | 行号 | 问题描述                                                                 | 严重程度 | 修复建议                                                                 |\n|--------------------------|------|--------------------------------------------------------------------------|----------|--------------------------------------------------------------------------|\n| `test_private.py`        | 1    | 使用了 `requests` 库进行 HTTP 请求，违反团队规范。                      | 高       | 替换为团队自研的 `xingyu_http` 组件。                                   |\n| `test_private.py`        | 2    | 使用了 `datetime` 模块直接获取当前时间，违反团队规范。                  | 高       | 替换为团队统一的时间获取组件（如 `xy_time.now()`）。                    |\n| `test_private.py`        | 3    | 使用了 `logging` 模块记录日志，违反团队规范。                           | 高       | 替换为团队自研的 `xy_logger` 组件。                                    |\n| `test_private.py`        | 6    | 直接使用 `response.json()` 获取 JSON 数据，未检查字段是否存在。         | 中       | 如涉及核心业务字段，推荐使用 `xingyu_safe_dict.safe_get()` 方法。      |\n\n---\n\n### **改进建议 (Improvements)**\n\n| 文件                     | 行号 | 改进建议                                                               | 原因                                                                 |\n|--------------------------|------|------------------------------------------------------------------------|----------------------------------------------------------------------|\n| `test_private.py`        | 5-12 | 建议对 `fetch_user_data` 函数添加文档字符串（Docstring），说明输入输出。 | 提高代码可读性和维护性。                                            |\n| `test_private.py`        | 5-12 | 建议对异常情况进行捕获和日志记录（使用 `xy_logger`）。                 | 避免函数因未捕获的异常静默失败。                                    |\n\n---\n\n### **总结 (Summary)**\n- **审查行数**: 12\n- **发现的严重问题数**: 4\n- **提出的改进建议数**: 2\n\n**注意事项**：\n1. 请务必根据团队规范，替换所有不合规的代码（如 `requests`、`datetime`、`logging` 等）。\n2. 如果 `response.json()` 中的数据涉及核心业务字段，请使用 `xingyu_safe_dict.safe_get()` 方法以避免潜在问题。",
+    "time_cost_sec": 70.32,
+    "tokens": 11252,
+    "output_preview": "### 审查报告（更新：基于团队规范的补充）\n\n#### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| test_cases/test_private.py | 1 | 使用了第三方库 `requests` | 高 | 必须替换为公司自研组件 `xingyu_http.SafeClient`，禁止直接使用 `requests` |\n| test_cases/test_private.py | 2 | 使用了标准库 `datetime` | 高 | 必须替换为公司自研组件 `xingyu_time.get_current_timestamp()`，禁止直接使用 `datetime.now()` |\n| test_cases/test_private.py | 3 | 使用了标准库 `threading` | 高 | 必须替换为公司自研组件 `xingyu_threading.ThreadPoolManager`，禁止直接使用 `threading.Thread` |\n| test_cases/test_private.py | 6 | 直接调用外部 API `https://api.example.com/data` | 高 | 必须使用 `xingyu_http.SafeClient` 封装的安全方法调用，禁止直接调用外部 API |\n| test_cases/test_private.py | 8 | 直接通过字典键 `user_data[\"id\"]` 获取数据 | 高 | 必须使用 `xingyu_safe_dict.safe_get(user_data, \"id\")`，以处理键缺失并上报告警 |\n| test_cases/test_private.py | 10 | 线程启动未处理异常 | 高 | 必须使用 `xingyu_threading.ThreadPoolManager`，并在线程任务中捕获异常 |\n\n#### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| test_cases/test_private.py | 5 | 为函数 `process_user_data` 添加文档字符串（Docstring） | 提高代码可读性和维护性 |\n| test_cases/test_private.py | 7 | 为变量 `now` 添加注释，说明其用途 | 提高代码可读性 |\n\n#### 总结 (Summary)\n- 审查行数: 13\n- 发现的严重问题数: 6\n- 提出的改进建议数: 2\n\n### 规范引用说明\n1. **`requests` 替换为 `xingyu_http.SafeClient`**  \n   规范要求所有网络请求必须使用公司封装的 `xingyu_http.SafeClient`，以便统一监控、鉴权和熔断。\n\n2. **`datetime` 替换为 `xingyu_time.get_current_timestamp()`**  \n   规范要求使用 `xingyu_time.get_current_timestamp()`，以处理时区同步和服务器时间漂移。\n\n3. **`threading` 替换为 `xingyu_threading.ThreadPoolManager`**  \n   规范禁止手动创建线程，必须使用统一的线程池管理器，防止线程泄漏。\n\n4. **字典取值必须使用 `xingyu_safe_dict.safe_get()`**  \n   核心业务字段的字典取值必须使用 `xingyu_safe_dict.safe_get()`，以自动上报键缺失告警。\n\n5. **线程任务必须捕获异常**  \n   规范要求在线程任务中明确捕获异常，避免静默失败。\n\n请根据上述建议尽快修复代码，确保符合团队规范。建议将修复后的代码提交审查再次确认。",
     "tools_used": [
       "read_file",
-      "ast_analyze",
       "search_coding_rules"
     ],
     "rag_recalled": [
-      "- 【星宇科技（虚构）内部 Python 业务研发规范 V2.0】\n\n1.网络请求组件规范：所有对外部第三方 API 的 HTTP 请求，严禁直接使用 requests 库或 urllib。 (相似度: 0.55)",
-      "- 2.时间获取规范：严禁在业务代码中直接调用 datetime.datetime.now() 或 time.time()。 (相似度: 0.55)",
-      "- 必须统一使用公司自研的 xy_logger 组件。 (相似度: 0.61)\n- 3.日志打印规范：严禁使用 Python 自带的 logging 模块或 print。 (相似度: 0.54)",
-      "- 6.字典取值规范：从字典中获取可能不存在的键时，除了使用 .get()，如果该字段属于核心业务字段，必须使用内部封装的 xingyu_safe_dict.safe_get() 方法。 (相似度: 0.70)",
-      "- 2.时间获取规范：严禁在业务代码中直接调用 datetime.datetime.now() 或 time.time()。 (相似度: 0.54)",
-      "- 6.字典取值规范：从字典中获取可能不存在的键时，除了使用 .get()，如果该字段属于核心业务字段，必须使用内部封装的 xingyu_safe_dict.safe_get() 方法。 (相似度: 0.45)"
+      "- 23. 异步阻塞红线：在 async 定义的协程函数中，严禁调用 time.sleep()、requests.get() 等同步阻塞方法，必须使用 await asyncio.sleep() 或 aiohttp。 (RRF融合分: 0.0164)",
+      "- 1. 网络请求组件规范：所有对外部第三方 API 的 HTTP 请求，严禁直接使用 requests、urllib 或 httpx。必须且只能使用公司基础架构部封装的 xingyu_http.SafeClient，以便于统一监控、鉴权和熔断。 (RRF融合分: 0.0161)",
+      "- 24. 线程池规范：严禁通过 threading.Thread 手动创建大量线程，必须使用统一的 xingyu_threading.ThreadPoolManager 管理线程池，防止线程泄漏。 (RRF融合分: 0.0164)",
+      "- 25. 锁释放规范：在使用 threading.Lock 或分布式锁时，必须在 try-finally 块中释放锁，或使用 with 上下文管理器，严禁在锁未释放的情况下 return 或 raise。 (RRF融合分: 0.0161)",
+      "- 4. 时间获取规范：严禁在业务代码中直接调用 datetime.datetime.now() 或 time.time()。必须使用 xingyu_time.get_current_timestamp()，该函数内部会自动处理多时区同步和服务器时间漂移补偿。 (RRF融合分: 0.0164)",
+      "- 21. 命名规范：所有的内部辅助函数，必须以单下划线开头（如 _helper_function）。公共 API 函数名必须使用完整的英文单词，禁止使用拼音或无意义的缩写（如禁止使用 get_usr_inf 替代 get_user_info）。 (RRF融合分: 0.0164)",
+      "- 23. 异步阻塞红线：在 async 定义的协程函数中，严禁调用 time.sleep()、requests.get() 等同步阻塞方法，必须使用 await asyncio.sleep() 或 aiohttp。 (RRF融合分: 0.0161)",
+      "- 9. 字典取值规范：从字典中获取可能不存在的键时，除了使用 .get()，如果该字段属于核心业务字段，必须使用内部封装的 xingyu_safe_dict.safe_get() 方法。该方法在键缺失时会自动上报 Metrics 告警，而不是静默返回默认值。 (RRF融合分: 0.0159)",
+      "- 4. 时间获取规范：严禁在业务代码中直接调用 datetime.datetime.now() 或 time.time()。必须使用 xingyu_time.get_current_timestamp()，该函数内部会自动处理多时区同步和服务器时间漂移补偿。 (RRF融合分: 0.0156)",
+      "- 1. 网络请求组件规范：所有对外部第三方 API 的 HTTP 请求，严禁直接使用 requests、urllib 或 httpx。必须且只能使用公司基础架构部封装的 xingyu_http.SafeClient，以便于统一监控、鉴权和熔断。 (RRF融合分: 0.0164)",
+      "- 21. 命名规范：所有的内部辅助函数，必须以单下划线开头（如 _helper_function）。公共 API 函数名必须使用完整的英文单词，禁止使用拼音或无意义的缩写（如禁止使用 get_usr_inf 替代 get_user_info）。 (RRF融合分: 0.0161)",
+      "- 14. 异常捕获红线：严禁使用裸的 except: 或 except Exception 捕获异常。必须明确捕获具体的异常类型（如 ValueError, KeyError），并在捕获后记录 ERROR 日志。 (RRF融合分: 0.0164)",
+      "- 24. 线程池规范：严禁通过 threading.Thread 手动创建大量线程，必须使用统一的 xingyu_threading.ThreadPoolManager 管理线程池，防止线程泄漏。 (RRF融合分: 0.0161)",
+      "- 25. 锁释放规范：在使用 threading.Lock 或分布式锁时，必须在 try-finally 块中释放锁，或使用 with 上下文管理器，严禁在锁未释放的情况下 return 或 raise。 (RRF融合分: 0.0159)",
+      "- 12. Redis 缓存 Key 规范：使用 Redis 时，严禁硬编码 Key 字符串。必须通过 xingyu_cache.gen_key() 生成，且 Key 的命名必须强制带有环境前缀（如 prod:user:1001）。 (RRF融合分: 0.0156)"
     ],
     "tool_check_status": "Passed",
     "tool_check_msg": "OK",
-    "steps": 14,
+    "steps": 17,
+    "avg_steps": 5.7,
+    "rag_hit_rate": 1.0,
+    "rag_mrr": 0.2778,
     "redundancy": false,
     "loop_circuit_breaker": false,
-    "score": 80.0,
-    "total_score": 80.0,
+    "score": 84.4,
+    "total_score": 84.4,
     "tool_score": 25,
-    "performance_score": 12,
-    "stability_score": 20,
-    "quality_score": 23.0,
-    "judge_avg_raw": 7.67,
+    "performance_score": 6,
+    "stability_score": 15,
+    "rag_score": 11.4,
+    "quality_score": 27.0,
+    "recall_rate": 1.0,
+    "missed_vulns": [],
+    "ground_truth_score": 15.0,
+    "judge_score": 12.0,
+    "judge_details": [
+      {
+        "accuracy_score": 4,
+        "completeness_score": 2,
+        "actionability_score": 2,
+        "format_score": 1
+      },
+      {
+        "accuracy_score": 4,
+        "completeness_score": 2,
+        "actionability_score": 1,
+        "format_score": 1
+      },
+      {
+        "accuracy_score": 4,
+        "completeness_score": 2,
+        "actionability_score": 2,
+        "format_score": 1
+      }
+    ],
+    "judge_avg_raw": 8.0,
     "judge_reasons": [
-      "报告中指出了多个实际存在的问题，但存在一些不准确之处，如文件路径错误。",
-      "报告准确指出了代码中违反规范的问题，但未提及 `.json()` 方法的使用问题，导致完整性扣分。",
-      "报告准确指出了代码中违反规范的问题，但未提及所有严重问题，如未捕获异常。"
+      "报告准确指出了代码中的问题，但缺少对逻辑错误和边界情况的检查，且部分修复建议不够具体。",
+      "报告准确指出了代码中的问题，但缺少对逻辑错误和边界情况的检查，且部分修复建议不够具体。",
+      "报告准确指出了多个关键问题，但缺少对异常捕获规范的具体修复建议，且未提及函数命名规范。"
     ],
     "has_hallucination": false,
     "attempts": [
       {
         "exec_status": "Success",
-        "time_cost_sec": 27.33,
-        "tokens": 9638,
-        "output_preview": "根据代码内容和 AST 分析结果，以下是审查报告：\n\n---\n\n### 严重问题 (Critical Issues)\n\n| 文件                     | 行号 | 问题描述                                      | 严重程度 | 修复建议                                                                 |\n|--------------------------|------|---------------------------------------------|----------|--------------------------------------------------------------------------|\n| `test_cases/test_private.py` | 1    | 使用了第三方库 `requests`                 | 高       | **必须** 替换为团队自研的 HTTP 请求组件（如 `xingyu_http`），但未找到相关规范。 |\n| `test_cases/test_private.py` | 3    | 使用了标准库 `logging`                   | 中       | **必须** 替换为团队自研的日志组件（如 `xy_logger`），但未找到相关规范。       |\n| `test_cases/test_private.py` | 5    | 函数 `fetch_user_data` 中没有异常处理    | 高       | **必须** 添加异常处理（如捕获 `requests` 异常或其他可能的网络错误）。     |\n| `test_cases/test_private.py` | 6    | 硬编码 API URL                          | 中       | **必须** 将 URL 配置化为常量或配置文件，避免硬编码。                     |\n| `test_cases/test_private.py` | 10   | 日志记录未格式化时间                   | 低       | **建议** 使用 `datetime` 的标准格式化方法（如 `.strftime()`）记录更清晰的时间。 |\n\n---\n\n### 改进建议 (Improvements)\n\n| 文件                     | 行号 | 改进建议                                    | 原因                                                                 |\n|--------------------------|------|-------------------------------------------|----------------------------------------------------------------------|\n| `test_cases/test_private.py` | 5    | 为函数 `fetch_user_data` 添加文档字符串   | 提高代码可维护性，明确函数用途和返回值的描述。                     |\n| `test_cases/test_private.py` | 6    | 检查 API URL 是否应支持 HTTPS             | 安全性考虑，避免明文传输数据。                                     |\n| `test_cases/test_private.py` | 8    | 简化 `datetime` 的使用                    | `datetime.now()` 的结果可直接用于日志格式化，无需单独赋值变量。    |\n\n---\n\n### 总结 (Summary)\n- 审查行数: 12\n- 发现的严重问题数: 3\n- 提出的改进建议数: 3\n\n**特别说明**:  \n未检索到团队关于 `requests` 和 `logging` 的规范，**强烈建议**进一步确认是否允许使用这些库，或是否有对应的自研组件替换。",
-        "tools_used": [
-          "read_file",
-          "ast_analyze",
-          "search_coding_rules"
-        ],
-        "rag_recalled": [],
-        "tool_check_status": "Passed",
-        "tool_check_msg": "OK",
-        "steps": 3,
-        "redundancy": false,
-        "loop_circuit_breaker": false,
-        "judge_score_raw": 7,
-        "judge_reason": "报告中指出了多个实际存在的问题，但存在一些不准确之处，如文件路径错误。",
-        "hallucination": false
-      },
-      {
-        "exec_status": "Success",
-        "time_cost_sec": 27.11,
-        "tokens": 9789,
-        "output_preview": "## 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| test_cases/test_private.py | 1 | 直接使用 `requests` 库进行 HTTP 请求 | 高危 | 必须使用公司自研的 `xingyu_http` 组件替代。相关规范：网络请求组件规范。 |\n| test_cases/test_private.py | 2 | 直接调用 `datetime.datetime.now()` | 高危 | 必须使用公司自研的时间组件方法替代。相关规范：时间获取规范。 |\n| test_cases/test_private.py | 3 | 使用 Python 自带的 `logging` 模块 | 高危 | 必须使用公司自研的 `xy_logger` 组件。相关规范：日志打印规范。 |\n| test_cases/test_private.py | 5-12 | 函数 `fetch_user_data` 的网络请求未进行异常捕获 | 中危 | 必须捕获 `requests.get` 可能抛出的异常（如超时、连接失败等），并使用公司自研的异常处理组件（如 `xingyu_safe_request`）。 |\n\n## 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| test_cases/test_private.py | 5-12 | 为函数 `fetch_user_data` 添加文档字符串（Docstring），说明功能和返回值 | 提升代码可读性和可维护性 |\n| test_cases/test_private.py | 6, 12 | 使用 `xingyu_safe_dict.safe_get()` 方法替代 `.json()` 方法获取可能的空键值 | 避免潜在的字典取值问题 |\n\n## 总结 (Summary)\n- 审查行数: 12\n- 发现的严重问题数: 4\n- 提出的改进建议数: 2\n\n**关键提示**：  \n1. 涉及网络请求、日志打印、时间获取等操作时，必须严格遵守公司内部规范，使用自研组件替代第三方库。  \n2. 函数中的异常处理至关重要，避免静默失败。",
+        "time_cost_sec": 44.29,
+        "tokens": 11123,
+        "output_preview": "### 团队规范引用与修复建议\n\n1. **`requests`**：\n   - **规范**：所有对外部第三方 API 的 HTTP 请求，必须使用 `xingyu_http.SafeClient`。\n   - **修复建议**：替换 `requests.get` 为 `xingyu_http.SafeClient().request`。\n\n2. **`threading`**：\n   - **规范**：严禁手动创建线程，必须使用 `xingyu_threading.ThreadPoolManager`。\n   - **修复建议**：替换 `threading.Thread` 为 `xingyu_threading.ThreadPoolManager.submit`。\n\n3. **`datetime`**：\n   - **规范**：禁止直接调用 `datetime.datetime.now()`，必须使用 `xingyu_time.get_current_timestamp()`。\n   - **修复建议**：替换 `datetime.datetime.now()` 为 `xingyu_time.get_current_timestamp()` 并转换为适当格式。\n\n4. **字典取值**：\n   - **规范**：对于核心业务字段，必须使用 `xingyu_safe_dict.safe_get()`。\n   - **修复建议**：替换 `user_data[\"id\"]` 为 `xingyu_safe_dict.safe_get(user_data, \"id\")`。\n\n---\n\n### 严重问题 (Critical Issues)\n\n| 文件                       | 行号 | 问题描述                                                                         | 严重程度 | 修复建议                                                                                                   |\n|----------------------------|------|----------------------------------------------------------------------------------|----------|------------------------------------------------------------------------------------------------------------|\n| `test_cases/test_private.py` | 1,6  | 直接使用 `requests.get`，违反团队规范                                             | 高       | 替换为 `xingyu_http.SafeClient().request`                                                                 |\n| `test_cases/test_private.py` | 3,10 | 直接使用 `threading.Thread`，违反团队规范                                         | 高       | 替换为 `xingyu_threading.ThreadPoolManager.submit`                                                        |\n| `test_cases/test_private.py` | 2,7  | 直接使用 `datetime.datetime.now()`，违反团队规范                                  | 中       | 替换为 `xingyu_time.get_current_timestamp()` 并转换为适当格式                                             |\n| `test_cases/test_private.py` | 8    | 直接使用 `user_data[\"id\"]`，可能因键缺失抛出异常，建议使用 `xingyu_safe_dict.safe_get` | 中       | 替换为 `xingyu_safe_dict.safe_get(user_data, \"id\")`                                                       |\n\n---\n\n### 改进建议 (Improvements)\n\n| 文件                       | 行号 | 改进建议                                     | 原因                                                                 |\n|----------------------------|------|----------------------------------------------|----------------------------------------------------------------------|\n| `test_cases/test_private.py` | 10   | 线程逻辑未与主流程关联，可能导致资源泄漏       | 线程应显式管理或通过线程池提交任务                                    |\n| `test_cases/test_private.py` | 全部 | 为函数和模块添加清晰的文档字符串（Docstring） | 提高代码可读性和维护性                                              |\n\n---\n\n### 总结 (Summary)\n- **审查行数**: 13\n- **发现的严重问题数**: 4\n- **提出的改进建议数**: 2\n\n请根据团队规范修复上述问题，并使用公司自研组件替代第三方库！",
         "tools_used": [
           "read_file",
           "search_coding_rules"
         ],
         "rag_recalled": [
-          "- 【星宇科技（虚构）内部 Python 业务研发规范 V2.0】\n\n1.网络请求组件规范：所有对外部第三方 API 的 HTTP 请求，严禁直接使用 requests 库或 urllib。 (相似度: 0.55)",
-          "- 2.时间获取规范：严禁在业务代码中直接调用 datetime.datetime.now() 或 time.time()。 (相似度: 0.55)",
-          "- 必须统一使用公司自研的 xy_logger 组件。 (相似度: 0.61)\n- 3.日志打印规范：严禁使用 Python 自带的 logging 模块或 print。 (相似度: 0.54)",
-          "- 6.字典取值规范：从字典中获取可能不存在的键时，除了使用 .get()，如果该字段属于核心业务字段，必须使用内部封装的 xingyu_safe_dict.safe_get() 方法。 (相似度: 0.70)"
-        ],
-        "tool_check_status": "Passed",
-        "tool_check_msg": "OK",
-        "steps": 6,
-        "redundancy": false,
-        "loop_circuit_breaker": false,
-        "judge_score_raw": 8,
-        "judge_reason": "报告准确指出了代码中违反规范的问题，但未提及 `.json()` 方法的使用问题，导致完整性扣分。",
-        "hallucination": false
-      },
-      {
-        "exec_status": "Success",
-        "time_cost_sec": 25.63,
-        "tokens": 9789,
-        "output_preview": "根据审查标准和团队内部规范，以下是对 `test_cases/test_private.py` 的审查报告：\n\n---\n\n### **严重问题 (Critical Issues)**\n\n| 文件                     | 行号 | 问题描述                                                                 | 严重程度 | 修复建议                                                                 |\n|--------------------------|------|--------------------------------------------------------------------------|----------|--------------------------------------------------------------------------|\n| `test_private.py`        | 1    | 使用了 `requests` 库进行 HTTP 请求，违反团队规范。                      | 高       | 替换为团队自研的 `xingyu_http` 组件。                                   |\n| `test_private.py`        | 2    | 使用了 `datetime` 模块直接获取当前时间，违反团队规范。                  | 高       | 替换为团队统一的时间获取组件（如 `xy_time.now()`）。                    |\n| `test_private.py`        | 3    | 使用了 `logging` 模块记录日志，违反团队规范。                           | 高       | 替换为团队自研的 `xy_logger` 组件。                                    |\n| `test_private.py`        | 6    | 直接使用 `response.json()` 获取 JSON 数据，未检查字段是否存在。         | 中       | 如涉及核心业务字段，推荐使用 `xingyu_safe_dict.safe_get()` 方法。      |\n\n---\n\n### **改进建议 (Improvements)**\n\n| 文件                     | 行号 | 改进建议                                                               | 原因                                                                 |\n|--------------------------|------|------------------------------------------------------------------------|----------------------------------------------------------------------|\n| `test_private.py`        | 5-12 | 建议对 `fetch_user_data` 函数添加文档字符串（Docstring），说明输入输出。 | 提高代码可读性和维护性。                                            |\n| `test_private.py`        | 5-12 | 建议对异常情况进行捕获和日志记录（使用 `xy_logger`）。                 | 避免函数因未捕获的异常静默失败。                                    |\n\n---\n\n### **总结 (Summary)**\n- **审查行数**: 12\n- **发现的严重问题数**: 4\n- **提出的改进建议数**: 2\n\n**注意事项**：\n1. 请务必根据团队规范，替换所有不合规的代码（如 `requests`、`datetime`、`logging` 等）。\n2. 如果 `response.json()` 中的数据涉及核心业务字段，请使用 `xingyu_safe_dict.safe_get()` 方法以避免潜在问题。",
-        "tools_used": [
-          "read_file",
-          "search_coding_rules"
-        ],
-        "rag_recalled": [
-          "- 【星宇科技（虚构）内部 Python 业务研发规范 V2.0】\n\n1.网络请求组件规范：所有对外部第三方 API 的 HTTP 请求，严禁直接使用 requests 库或 urllib。 (相似度: 0.55)",
-          "- 2.时间获取规范：严禁在业务代码中直接调用 datetime.datetime.now() 或 time.time()。 (相似度: 0.54)",
-          "- 必须统一使用公司自研的 xy_logger 组件。 (相似度: 0.61)\n- 3.日志打印规范：严禁使用 Python 自带的 logging 模块或 print。 (相似度: 0.54)",
-          "- 6.字典取值规范：从字典中获取可能不存在的键时，除了使用 .get()，如果该字段属于核心业务字段，必须使用内部封装的 xingyu_safe_dict.safe_get() 方法。 (相似度: 0.45)"
+          "- 23. 异步阻塞红线：在 async 定义的协程函数中，严禁调用 time.sleep()、requests.get() 等同步阻塞方法，必须使用 await asyncio.sleep() 或 aiohttp。 (RRF融合分: 0.0164)",
+          "- 1. 网络请求组件规范：所有对外部第三方 API 的 HTTP 请求，严禁直接使用 requests、urllib 或 httpx。必须且只能使用公司基础架构部封装的 xingyu_http.SafeClient，以便于统一监控、鉴权和熔断。 (RRF融合分: 0.0161)",
+          "- 24. 线程池规范：严禁通过 threading.Thread 手动创建大量线程，必须使用统一的 xingyu_threading.ThreadPoolManager 管理线程池，防止线程泄漏。 (RRF融合分: 0.0164)",
+          "- 25. 锁释放规范：在使用 threading.Lock 或分布式锁时，必须在 try-finally 块中释放锁，或使用 with 上下文管理器，严禁在锁未释放的情况下 return 或 raise。 (RRF融合分: 0.0161)",
+          "- 4. 时间获取规范：严禁在业务代码中直接调用 datetime.datetime.now() 或 time.time()。必须使用 xingyu_time.get_current_timestamp()，该函数内部会自动处理多时区同步和服务器时间漂移补偿。 (RRF融合分: 0.0164)",
+          "- 21. 命名规范：所有的内部辅助函数，必须以单下划线开头（如 _helper_function）。公共 API 函数名必须使用完整的英文单词，禁止使用拼音或无意义的缩写（如禁止使用 get_usr_inf 替代 get_user_info）。 (RRF融合分: 0.0164)",
+          "- 23. 异步阻塞红线：在 async 定义的协程函数中，严禁调用 time.sleep()、requests.get() 等同步阻塞方法，必须使用 await asyncio.sleep() 或 aiohttp。 (RRF融合分: 0.0161)",
+          "- 9. 字典取值规范：从字典中获取可能不存在的键时，除了使用 .get()，如果该字段属于核心业务字段，必须使用内部封装的 xingyu_safe_dict.safe_get() 方法。该方法在键缺失时会自动上报 Metrics 告警，而不是静默返回默认值。 (RRF融合分: 0.0159)",
+          "- 4. 时间获取规范：严禁在业务代码中直接调用 datetime.datetime.now() 或 time.time()。必须使用 xingyu_time.get_current_timestamp()，该函数内部会自动处理多时区同步和服务器时间漂移补偿。 (RRF融合分: 0.0156)"
         ],
         "tool_check_status": "Passed",
         "tool_check_msg": "OK",
@@ -106,62 +103,203 @@
         "redundancy": false,
         "loop_circuit_breaker": false,
         "judge_score_raw": 8,
-        "judge_reason": "报告准确指出了代码中违反规范的问题，但未提及所有严重问题，如未捕获异常。",
-        "hallucination": false
+        "judge_reason": "报告准确指出了代码中的问题，但缺少对逻辑错误和边界情况的检查，且部分修复建议不够具体。",
+        "hallucination": false,
+        "hit_count": 4,
+        "missed_vulns": [],
+        "recall_rate": 1.0,
+        "ground_truth_score": 15.0,
+        "judge_details": {
+          "accuracy_score": 4,
+          "completeness_score": 2,
+          "actionability_score": 2,
+          "format_score": 1
+        },
+        "rag_hit_rate": 1.0,
+        "rag_mrr": 0.29166666666666663
+      },
+      {
+        "exec_status": "Success",
+        "time_cost_sec": 23.49,
+        "tokens": 10405,
+        "output_preview": "### 严重问题 (Critical Issues)\n\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| test_cases/test_private.py | 1 | 使用了第三方库 `requests`，违反了公司网络请求组件规范 | 高 | 改用公司封装的 `xingyu_http.SafeClient` |\n| test_cases/test_private.py | 2 | 直接调用 `datetime.datetime.now()`，违反了时间获取规范 | 高 | 改用公司封装的 `xingyu_time.get_current_timestamp()` |\n| test_cases/test_private.py | 3, 10 | 手动创建线程 `threading.Thread`，违反了线程池规范 | 高 | 改用公司封装的 `xingyu_threading.ThreadPoolManager` |\n| test_cases/test_private.py | 8 | 使用字典直接取值 `user_data[\"id\"]`，未处理键缺失的情况 | 中 | 改用 `xingyu_safe_dict.safe_get()` 或使用 `.get()` 并提供默认值 |\n\n### 改进建议 (Improvements)\n\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| test_cases/test_private.py | 所有函数 | 检查函数命名是否符合内部规范 | 函数命名需符合公司规范 |\n| test_cases/test_private.py | 5-13 | 为函数添加文档字符串（Docstring） | 提高代码可读性和可维护性 |\n| test_cases/test_private.py | 10 | 使用线程池时需确保线程在结束后释放资源 | 防止线程泄漏 |\n\n### 总结 (Summary)\n- 审查行数: 13\n- 发现的严重问题数: 4\n- 提出的改进建议数: 3  \n\n**总结**：  \n该文件中存在多个违反公司内部规范的问题，尤其是使用了第三方库和直接调用系统时间函数。建议尽快按照修复建议进行修改，以符合公司规范和确保系统的安全性、稳定性。",
+        "tools_used": [
+          "read_file",
+          "search_coding_rules"
+        ],
+        "rag_recalled": [
+          "- 23. 异步阻塞红线：在 async 定义的协程函数中，严禁调用 time.sleep()、requests.get() 等同步阻塞方法，必须使用 await asyncio.sleep() 或 aiohttp。 (RRF融合分: 0.0164)",
+          "- 1. 网络请求组件规范：所有对外部第三方 API 的 HTTP 请求，严禁直接使用 requests、urllib 或 httpx。必须且只能使用公司基础架构部封装的 xingyu_http.SafeClient，以便于统一监控、鉴权和熔断。 (RRF融合分: 0.0161)",
+          "- 4. 时间获取规范：严禁在业务代码中直接调用 datetime.datetime.now() 或 time.time()。必须使用 xingyu_time.get_current_timestamp()，该函数内部会自动处理多时区同步和服务器时间漂移补偿。 (RRF融合分: 0.0164)",
+          "- 24. 线程池规范：严禁通过 threading.Thread 手动创建大量线程，必须使用统一的 xingyu_threading.ThreadPoolManager 管理线程池，防止线程泄漏。 (RRF融合分: 0.0164)",
+          "- 25. 锁释放规范：在使用 threading.Lock 或分布式锁时，必须在 try-finally 块中释放锁，或使用 with 上下文管理器，严禁在锁未释放的情况下 return 或 raise。 (RRF融合分: 0.0161)",
+          "- 21. 命名规范：所有的内部辅助函数，必须以单下划线开头（如 _helper_function）。公共 API 函数名必须使用完整的英文单词，禁止使用拼音或无意义的缩写（如禁止使用 get_usr_inf 替代 get_user_info）。 (RRF融合分: 0.0164)",
+          "- 23. 异步阻塞红线：在 async 定义的协程函数中，严禁调用 time.sleep()、requests.get() 等同步阻塞方法，必须使用 await asyncio.sleep() 或 aiohttp。 (RRF融合分: 0.0161)",
+          "- 9. 字典取值规范：从字典中获取可能不存在的键时，除了使用 .get()，如果该字段属于核心业务字段，必须使用内部封装的 xingyu_safe_dict.safe_get() 方法。该方法在键缺失时会自动上报 Metrics 告警，而不是静默返回默认值。 (RRF融合分: 0.0159)",
+          "- 4. 时间获取规范：严禁在业务代码中直接调用 datetime.datetime.now() 或 time.time()。必须使用 xingyu_time.get_current_timestamp()，该函数内部会自动处理多时区同步和服务器时间漂移补偿。 (RRF融合分: 0.0156)"
+        ],
+        "tool_check_status": "Passed",
+        "tool_check_msg": "OK",
+        "steps": 5,
+        "redundancy": false,
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 8,
+        "judge_reason": "报告准确指出了代码中的问题，但缺少对逻辑错误和边界情况的检查，且部分修复建议不够具体。",
+        "hallucination": false,
+        "hit_count": 4,
+        "missed_vulns": [],
+        "recall_rate": 1.0,
+        "ground_truth_score": 15.0,
+        "judge_details": {
+          "accuracy_score": 4,
+          "completeness_score": 2,
+          "actionability_score": 1,
+          "format_score": 1
+        },
+        "rag_hit_rate": 1.0,
+        "rag_mrr": 0.2708333333333333
+      },
+      {
+        "exec_status": "Success",
+        "time_cost_sec": 143.19,
+        "tokens": 12228,
+        "output_preview": "### 审查报告（更新：基于团队规范的补充）\n\n#### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| test_cases/test_private.py | 1 | 使用了第三方库 `requests` | 高 | 必须替换为公司自研组件 `xingyu_http.SafeClient`，禁止直接使用 `requests` |\n| test_cases/test_private.py | 2 | 使用了标准库 `datetime` | 高 | 必须替换为公司自研组件 `xingyu_time.get_current_timestamp()`，禁止直接使用 `datetime.now()` |\n| test_cases/test_private.py | 3 | 使用了标准库 `threading` | 高 | 必须替换为公司自研组件 `xingyu_threading.ThreadPoolManager`，禁止直接使用 `threading.Thread` |\n| test_cases/test_private.py | 6 | 直接调用外部 API `https://api.example.com/data` | 高 | 必须使用 `xingyu_http.SafeClient` 封装的安全方法调用，禁止直接调用外部 API |\n| test_cases/test_private.py | 8 | 直接通过字典键 `user_data[\"id\"]` 获取数据 | 高 | 必须使用 `xingyu_safe_dict.safe_get(user_data, \"id\")`，以处理键缺失并上报告警 |\n| test_cases/test_private.py | 10 | 线程启动未处理异常 | 高 | 必须使用 `xingyu_threading.ThreadPoolManager`，并在线程任务中捕获异常 |\n\n#### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| test_cases/test_private.py | 5 | 为函数 `process_user_data` 添加文档字符串（Docstring） | 提高代码可读性和维护性 |\n| test_cases/test_private.py | 7 | 为变量 `now` 添加注释，说明其用途 | 提高代码可读性 |\n\n#### 总结 (Summary)\n- 审查行数: 13\n- 发现的严重问题数: 6\n- 提出的改进建议数: 2\n\n### 规范引用说明\n1. **`requests` 替换为 `xingyu_http.SafeClient`**  \n   规范要求所有网络请求必须使用公司封装的 `xingyu_http.SafeClient`，以便统一监控、鉴权和熔断。\n\n2. **`datetime` 替换为 `xingyu_time.get_current_timestamp()`**  \n   规范要求使用 `xingyu_time.get_current_timestamp()`，以处理时区同步和服务器时间漂移。\n\n3. **`threading` 替换为 `xingyu_threading.ThreadPoolManager`**  \n   规范禁止手动创建线程，必须使用统一的线程池管理器，防止线程泄漏。\n\n4. **字典取值必须使用 `xingyu_safe_dict.safe_get()`**  \n   核心业务字段的字典取值必须使用 `xingyu_safe_dict.safe_get()`，以自动上报键缺失告警。\n\n5. **线程任务必须捕获异常**  \n   规范要求在线程任务中明确捕获异常，避免静默失败。\n\n请根据上述建议尽快修复代码，确保符合团队规范。建议将修复后的代码提交审查再次确认。",
+        "tools_used": [
+          "read_file",
+          "search_coding_rules"
+        ],
+        "rag_recalled": [
+          "- 23. 异步阻塞红线：在 async 定义的协程函数中，严禁调用 time.sleep()、requests.get() 等同步阻塞方法，必须使用 await asyncio.sleep() 或 aiohttp。 (RRF融合分: 0.0164)",
+          "- 1. 网络请求组件规范：所有对外部第三方 API 的 HTTP 请求，严禁直接使用 requests、urllib 或 httpx。必须且只能使用公司基础架构部封装的 xingyu_http.SafeClient，以便于统一监控、鉴权和熔断。 (RRF融合分: 0.0161)",
+          "- 4. 时间获取规范：严禁在业务代码中直接调用 datetime.datetime.now() 或 time.time()。必须使用 xingyu_time.get_current_timestamp()，该函数内部会自动处理多时区同步和服务器时间漂移补偿。 (RRF融合分: 0.0164)",
+          "- 24. 线程池规范：严禁通过 threading.Thread 手动创建大量线程，必须使用统一的 xingyu_threading.ThreadPoolManager 管理线程池，防止线程泄漏。 (RRF融合分: 0.0164)",
+          "- 25. 锁释放规范：在使用 threading.Lock 或分布式锁时，必须在 try-finally 块中释放锁，或使用 with 上下文管理器，严禁在锁未释放的情况下 return 或 raise。 (RRF融合分: 0.0161)",
+          "- 1. 网络请求组件规范：所有对外部第三方 API 的 HTTP 请求，严禁直接使用 requests、urllib 或 httpx。必须且只能使用公司基础架构部封装的 xingyu_http.SafeClient，以便于统一监控、鉴权和熔断。 (RRF融合分: 0.0164)",
+          "- 21. 命名规范：所有的内部辅助函数，必须以单下划线开头（如 _helper_function）。公共 API 函数名必须使用完整的英文单词，禁止使用拼音或无意义的缩写（如禁止使用 get_usr_inf 替代 get_user_info）。 (RRF融合分: 0.0161)",
+          "- 21. 命名规范：所有的内部辅助函数，必须以单下划线开头（如 _helper_function）。公共 API 函数名必须使用完整的英文单词，禁止使用拼音或无意义的缩写（如禁止使用 get_usr_inf 替代 get_user_info）。 (RRF融合分: 0.0164)",
+          "- 23. 异步阻塞红线：在 async 定义的协程函数中，严禁调用 time.sleep()、requests.get() 等同步阻塞方法，必须使用 await asyncio.sleep() 或 aiohttp。 (RRF融合分: 0.0161)",
+          "- 9. 字典取值规范：从字典中获取可能不存在的键时，除了使用 .get()，如果该字段属于核心业务字段，必须使用内部封装的 xingyu_safe_dict.safe_get() 方法。该方法在键缺失时会自动上报 Metrics 告警，而不是静默返回默认值。 (RRF融合分: 0.0159)",
+          "- 4. 时间获取规范：严禁在业务代码中直接调用 datetime.datetime.now() 或 time.time()。必须使用 xingyu_time.get_current_timestamp()，该函数内部会自动处理多时区同步和服务器时间漂移补偿。 (RRF融合分: 0.0156)",
+          "- 14. 异常捕获红线：严禁使用裸的 except: 或 except Exception 捕获异常。必须明确捕获具体的异常类型（如 ValueError, KeyError），并在捕获后记录 ERROR 日志。 (RRF融合分: 0.0164)",
+          "- 24. 线程池规范：严禁通过 threading.Thread 手动创建大量线程，必须使用统一的 xingyu_threading.ThreadPoolManager 管理线程池，防止线程泄漏。 (RRF融合分: 0.0161)",
+          "- 25. 锁释放规范：在使用 threading.Lock 或分布式锁时，必须在 try-finally 块中释放锁，或使用 with 上下文管理器，严禁在锁未释放的情况下 return 或 raise。 (RRF融合分: 0.0159)",
+          "- 12. Redis 缓存 Key 规范：使用 Redis 时，严禁硬编码 Key 字符串。必须通过 xingyu_cache.gen_key() 生成，且 Key 的命名必须强制带有环境前缀（如 prod:user:1001）。 (RRF融合分: 0.0156)"
+        ],
+        "tool_check_status": "Passed",
+        "tool_check_msg": "OK",
+        "steps": 7,
+        "redundancy": false,
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 8,
+        "judge_reason": "报告准确指出了多个关键问题，但缺少对异常捕获规范的具体修复建议，且未提及函数命名规范。",
+        "hallucination": false,
+        "hit_count": 4,
+        "missed_vulns": [],
+        "recall_rate": 1.0,
+        "ground_truth_score": 15.0,
+        "judge_details": {
+          "accuracy_score": 4,
+          "completeness_score": 2,
+          "actionability_score": 2,
+          "format_score": 1
+        },
+        "rag_hit_rate": 1.0,
+        "rag_mrr": 0.2708333333333333
       }
     ]
   },
   {
     "id": 2,
-    "category": "RAG 规范召回",
-    "status": "Stable",
-    "e2e_status": "Stable",
-    "pass_count": 3,
+    "category": "RAG 语义鸿沟（N+1 查询）",
+    "status": "Flaky",
+    "e2e_status": "Flaky",
+    "pass_count": 2,
     "pass_k": 3,
-    "time_cost_sec": 24.44,
-    "tokens": 11713,
-    "output_preview": "### 检索结果总结\n1. **`requests`**：\n   - 团队规范明确禁止直接使用 `requests` 库，所有对外部第三方 API 的 HTTP 请求必须使用公司自研组件。\n   - 但没有明确说明自研组件的名称。\n\n2. **`dict.get`**：\n   - 未检索到相关规范，可能意味着团队对字典取值操作没有特殊限制。\n\n### 审查报告\n\n#### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_dict.py` | 1 | 使用了被团队规范禁止的第三方库 `requests` | 高 | 替换为公司的自研 HTTP 请求组件 |\n\n#### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_dict.py` | 5 | 字典取值方式 `user_data.get(\"age\", 0)` 可以保持不变 | 团队未禁止此操作 |\n\n#### 总结 (Summary)\n- 审查行数: 6\n- 发现的严重问题数: 1\n- 提出的改进建议数: 1\n\n**下一步行动**：\n请确认团队推荐的 HTTP 请求组件名称（如 `xingyu_http`），我将协助更新代码以符合规范。",
+    "time_cost_sec": 30.97,
+    "tokens": 9013,
+    "output_preview": "### 代码审查报告\n\n#### 严重问题 (Critical Issues)\n\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| test_cases/test_dict.py | 4 | 直接拼接 SQL 查询字符串，存在 SQL 注入风险。 | 高危 | 使用参数化查询或预处理语句（ORM 或 SQL 参数绑定）。 |\n\n#### 改进建议 (Improvements)\n\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| test_cases/test_dict.py | 1 | 添加函数文档字符串（Docstring）。 | 提高代码可读性和可维护性。 |\n| test_cases/test_dict.py | 4 | 使用公司自研的安全查询组件或 ORM。 | 确保查询安全性和符合团队规范。 |\n\n#### 审查小结\n- 审查行数: 6\n- 发现的严重问题数: 1\n- 提出的改进建议数: 2\n\n#### 详细说明\n1. **SQL 注入风险**（行号 4）：函数中直接拼接 `user_id` 到 SQL 查询字符串中，这可能导致 SQL 注入攻击。例如，如果 `user_ids` 中包含恶意输入，攻击者可以通过注入代码来操纵查询。\n   - **修复建议**：\n     - 使用参数化查询或预处理语句（如 `db.query(\"SELECT * FROM orders WHERE user_id=?\", (uid,))`）。\n     - 如果团队有自研的安全查询组件（如 `xingyu_safe_query`），请务必使用该组件。\n\n2. **函数文档缺失**（行号 1）：当前函数 `get_user_orders` 没有文档说明，不易于理解其用途和参数。\n   - **修复建议**：添加文档字符串，说明函数的功能、参数和返回值。例如：\n     ```python\n     def get_user_orders(user_ids, db):\n         \"\"\"\n         根据用户ID列表查询用户的订单数据。\n         :param user_ids: 用户ID列表\n         :param db: 数据库连接对象\n         :return: 订单列表\n         \"\"\"\n     ```\n\n3. **公司自研组件**：请确保查询数据库时使用的是公司自研的安全组件，而非直接使用原生 SQL 拼接方式。这将符合团队的安全规范。\n\n如需进一步确认团队规范，可以调用 `search_coding_rules` 工具检索相关要求（例如 `search_coding_rules(query=\"SQL 查询\")`）。",
     "tools_used": [
       "read_file",
-      "ast_analyze",
       "search_coding_rules"
     ],
     "rag_recalled": [
-      "- 6.字典取值规范：从字典中获取可能不存在的键时，除了使用 .get()，如果该字段属于核心业务字段，必须使用内部封装的 xingyu_safe_dict.safe_get() 方法。 (相似度: 0.64)",
-      "- 【星宇科技（虚构）内部 Python 业务研发规范 V2.0】\n\n1.网络请求组件规范：所有对外部第三方 API 的 HTTP 请求，严禁直接使用 requests 库或 urllib。 (相似度: 0.55)",
-      "- 6.字典取值规范：从字典中获取可能不存在的键时，除了使用 .get()，如果该字段属于核心业务字段，必须使用内部封装的 xingyu_safe_dict.safe_get() 方法。 (相似度: 0.70)"
+      "- 4. 时间获取规范：严禁在业务代码中直接调用 datetime.datetime.now() 或 time.time()。必须使用 xingyu_time.get_current_timestamp()，该函数内部会自动处理多时区同步和服务器时间漂移补偿。 (RRF融合分: 0.0164)",
+      "- 24. 线程池规范：严禁通过 threading.Thread 手动创建大量线程，必须使用统一的 xingyu_threading.ThreadPoolManager 管理线程池，防止线程泄漏。 (RRF融合分: 0.0161)",
+      "- 17. 文件上传安全：处理用户上传的文件时，必须校验文件后缀名和 MIME 类型（白名单校验），防止上传恶意脚本（如 .sh, .exe）。 (RRF融合分: 0.0159)",
+      "- 8. 敏感信息脱敏：严禁在日志或异常堆栈中打印用户的明文密码、手机号、身份证号。必须使用 xingyu_masking.mask() 进行脱敏处理。 (RRF融合分: 0.0156)",
+      "- 18. SQL 注入防护：所有数据库查询必须使用 ORM 参数化查询，严禁通过字符串拼接（如 f\"SELECT * FROM users WHERE id={user_id}\"）构造 SQL。 (RRF融合分: 0.0164)",
+      "- 10. SQL 查询规范：严禁在 for 循环中执行单条 SQL 查询（N+1 问题）。必须使用批量查询 IN 语句或 ORM 的预加载（prefetch_related）功能。 (RRF融合分: 0.0161)",
+      "- 5. 日期格式化输出：所有返回给前端或写入数据库的日期时间，必须统一使用 UTC+8 时区，格式为 YYYY-MM-DD HH:mm:ss，严禁携带毫秒。 (RRF融合分: 0.0159)",
+      "- 20. 圈复杂度红线：单个函数的 if-elif-else 嵌套层级不得超过 3 层。如果超过，必须使用提前 return（Guard Clauses）或提取子函数的方式进行重构，严禁写出“箭头型”代码。 (RRF融合分: 0.0156)"
     ],
-    "tool_check_status": "Passed",
-    "tool_check_msg": "OK",
-    "steps": 10,
+    "tool_check_status": "Failed",
+    "tool_check_msg": "Missing: search_coding_rules",
+    "steps": 6,
+    "avg_steps": 2.0,
+    "rag_hit_rate": 0.3333,
+    "rag_mrr": 0.0,
     "redundancy": false,
     "loop_circuit_breaker": false,
-    "score": 80.0,
-    "total_score": 80.0,
-    "tool_score": 25,
-    "performance_score": 12,
-    "stability_score": 20,
-    "quality_score": 23.0,
+    "score": 44.3,
+    "total_score": 44.3,
+    "tool_score": 13,
+    "performance_score": 6,
+    "stability_score": 8,
+    "rag_score": 3.3,
+    "quality_score": 14.0,
+    "recall_rate": 0.1667,
+    "missed_vulns": [
+      "IN 语句",
+      "JOIN"
+    ],
+    "ground_truth_score": 2.5,
+    "judge_score": 11.5,
+    "judge_details": [
+      {
+        "accuracy_score": 4,
+        "completeness_score": 2,
+        "actionability_score": 1,
+        "format_score": 1
+      },
+      {
+        "accuracy_score": 4,
+        "completeness_score": 2,
+        "actionability_score": 1,
+        "format_score": 1
+      },
+      {
+        "accuracy_score": 4,
+        "completeness_score": 2,
+        "actionability_score": 2,
+        "format_score": 1
+      }
+    ],
     "judge_avg_raw": 7.67,
     "judge_reasons": [
-      "报告准确指出了使用第三方库和字典取值方法的问题，但未发现其他潜在问题，且建议较为全面。",
-      "报告准确指出了两个严重问题，但缺少对文件名的准确性确认，且建议添加文档字符串的改进建议不是必须项，影响完整性评分。",
-      "准确性较高，指出了使用 `requests` 库的问题，但完整性稍有欠缺，未提及代码中其他潜在问题。"
+      "报告准确指出了 SQL 注入风险和 N+1 查询问题，但未提及日期格式化输出规范和敏感信息脱敏规范，且未提供具体的修复代码或替换方案。",
+      "报告准确指出了 SQL 注入风险，但未发现其他潜在问题，且部分修复建议不够具体。",
+      "报告准确指出了 SQL 注入风险，并提供了具体的修复建议，但存在一些细节上的不足。"
     ],
     "has_hallucination": false,
     "attempts": [
       {
         "exec_status": "Success",
-        "time_cost_sec": 26.45,
-        "tokens": 12803,
-        "output_preview": "### 审查报告\n\n#### 严重问题 (Critical Issues)\n| 文件                | 行号 | 问题描述                                                                               | 严重程度 | 修复建议                                                                                               |\n|---------------------|------|----------------------------------------------------------------------------------------|----------|--------------------------------------------------------------------------------------------------------|\n| test_cases/test_dict.py | 1    | 使用了第三方库 `requests`，未确认是否为公司允许的库。如果公司内部有替代库（如 `xingyu_http`），必须使用替代库。 | 高       | 替换为内部库 `xingyu_http` 或确认 `requests` 为允许使用的库。 |\n| test_cases/test_dict.py | 5    | 使用了 `dict.get()` 方法，未确保是否为核心业务字段。根据团队规范，对于核心业务字段，应使用 `xingyu_safe_dict.safe_get()`。 | 中       | 如果 `\"age\"` 为核心业务字段，替换为 `safe_get(user_data, \"age\", 0)`。否则，可以保留当前实现。 |\n\n#### 改进建议 (Improvements)\n| 文件                | 行号 | 改进建议                                              | 原因                                                                 |\n|---------------------|------|-------------------------------------------------------|----------------------------------------------------------------------|\n| test_cases/test_dict.py | 4    | 为函数 `get_user_age` 添加文档字符串（Docstring）。   | 提高代码的可读性和可维护性，明确函数的输入、输出和用途。       |\n| test_cases/test_dict.py | 5    | 明确 `\"age\"` 是否为核心业务字段，并确保符合团队规范。 | 根据团队规范，核心业务字段必须使用 `xingyu_safe_dict.safe_get()`。 |\n\n#### 总结 (Summary)\n- 审查行数: 6\n- 发现的严重问题数: 2\n- 提出的改进建议数: 2\n\n**下一步建议：**\n1. 确认 `requests` 是否为公司允许使用的库。如果公司有内部替代库，请替换为内部库（如 `xingyu_http`）。\n2. 根据业务场景，确认 `\"age\"` 是否为核心业务字段。如果是，请使用 `safe_get(user_data, \"age\", 0)` 方法。",
+        "time_cost_sec": 31.46,
+        "tokens": 10116,
+        "output_preview": "### 审查报告：`test_cases/test_dict.py`\n\n#### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_dict.py` | 4 | 直接通过字符串拼接（f-string）构造 SQL 查询，存在 SQL 注入风险 | 高危 | 必须使用 ORM 参数化查询，禁止直接拼接 SQL。建议改用 `xingyu_orm.query_params` 或公司标准的 ORM 工具。 |\n| `test_cases/test_dict.py` | 3-5 | 在 `for` 循环中执行单条 SQL 查询，存在 N+1 查询性能问题 | 中危 | 使用批量查询（如 `IN` 语句）或 ORM 的预加载功能（如 `prefetch_related`），避免循环内查询。 |\n\n#### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_dict.py` | 1 | 为函数添加文档字符串（Docstring），说明函数的功能、参数和返回值 | 提升代码可读性和可维护性 |\n| `test_cases/test_dict.py` | 2-5 | 将循环逻辑提取为一个辅助函数（如 `_fetch_user_orders`），提升代码复用性 | 遵循单一职责原则 |\n\n#### 总结 (Summary)\n- 审查行数: 6\n- 发现的严重问题数: 2\n- 提出的改进建议数: 2\n\n**附加说明：**\n1. **SQL 注入风险**：根据团队规范（RRF 分数 0.0164），严禁直接拼接 SQL 字符串，必须使用参数化查询。\n2. **N+1 查询问题**：根据团队规范（RRF 分数 0.0161），禁止在循环中执行单条 SQL 查询，应改用批量查询或预加载功能。\n\n请根据修复建议进行调整，确保代码符合团队规范和安全要求。",
         "tools_used": [
           "read_file",
-          "ast_analyze",
           "search_coding_rules"
         ],
         "rag_recalled": [
-          "- 6.字典取值规范：从字典中获取可能不存在的键时，除了使用 .get()，如果该字段属于核心业务字段，必须使用内部封装的 xingyu_safe_dict.safe_get() 方法。 (相似度: 0.64)"
+          "- 4. 时间获取规范：严禁在业务代码中直接调用 datetime.datetime.now() 或 time.time()。必须使用 xingyu_time.get_current_timestamp()，该函数内部会自动处理多时区同步和服务器时间漂移补偿。 (RRF融合分: 0.0164)",
+          "- 24. 线程池规范：严禁通过 threading.Thread 手动创建大量线程，必须使用统一的 xingyu_threading.ThreadPoolManager 管理线程池，防止线程泄漏。 (RRF融合分: 0.0161)",
+          "- 17. 文件上传安全：处理用户上传的文件时，必须校验文件后缀名和 MIME 类型（白名单校验），防止上传恶意脚本（如 .sh, .exe）。 (RRF融合分: 0.0159)",
+          "- 8. 敏感信息脱敏：严禁在日志或异常堆栈中打印用户的明文密码、手机号、身份证号。必须使用 xingyu_masking.mask() 进行脱敏处理。 (RRF融合分: 0.0156)",
+          "- 18. SQL 注入防护：所有数据库查询必须使用 ORM 参数化查询，严禁通过字符串拼接（如 f\"SELECT * FROM users WHERE id={user_id}\"）构造 SQL。 (RRF融合分: 0.0164)",
+          "- 10. SQL 查询规范：严禁在 for 循环中执行单条 SQL 查询（N+1 问题）。必须使用批量查询 IN 语句或 ORM 的预加载（prefetch_related）功能。 (RRF融合分: 0.0161)",
+          "- 5. 日期格式化输出：所有返回给前端或写入数据库的日期时间，必须统一使用 UTC+8 时区，格式为 YYYY-MM-DD HH:mm:ss，严禁携带毫秒。 (RRF融合分: 0.0159)",
+          "- 20. 圈复杂度红线：单个函数的 if-elif-else 嵌套层级不得超过 3 层。如果超过，必须使用提前 return（Guard Clauses）或提取子函数的方式进行重构，严禁写出“箭头型”代码。 (RRF融合分: 0.0156)"
         ],
         "tool_check_status": "Passed",
         "tool_check_msg": "OK",
@@ -169,52 +307,99 @@
         "redundancy": false,
         "loop_circuit_breaker": false,
         "judge_score_raw": 8,
-        "judge_reason": "报告准确指出了使用第三方库和字典取值方法的问题，但未发现其他潜在问题，且建议较为全面。",
-        "hallucination": false
+        "judge_reason": "报告准确指出了 SQL 注入风险和 N+1 查询问题，但未提及日期格式化输出规范和敏感信息脱敏规范，且未提供具体的修复代码或替换方案。",
+        "hallucination": false,
+        "hit_count": 2,
+        "missed_vulns": [
+          "IN 语句",
+          "JOIN"
+        ],
+        "recall_rate": 0.5,
+        "ground_truth_score": 7.5,
+        "judge_details": {
+          "accuracy_score": 4,
+          "completeness_score": 2,
+          "actionability_score": 1,
+          "format_score": 1
+        },
+        "rag_hit_rate": 1.0,
+        "rag_mrr": 0.0
       },
       {
         "exec_status": "Success",
-        "time_cost_sec": 21.35,
-        "tokens": 12720,
-        "output_preview": "### 审查报告\n\n#### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_dict.py` | 1 | 直接使用了第三方库 `requests` | 高 | **必须**替换为公司自研的网络请求组件（如 `xingyu_http`）。引用规范：【星宇科技（虚构）内部 Python 业务研发规范 V2.0】第 1 条。 |\n| `test_cases/test_dict.py` | 5 | 字典取值使用了标准的 `.get()` 方法，未使用公司自研的 `safe_get` | 中 | **必须**使用 `xingyu_safe_dict.safe_get(user_data, \"age\", 0)` 方法。引用规范：【星宇科技（虚构）内部 Python 业务研发规范 V2.0】第 6 条。 |\n\n#### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_dict.py` | 4 | 为函数 `get_user_age` 添加文档字符串（Docstring） | 提高代码可读性和可维护性 |\n\n### 总结 (Summary)\n- 审查行数: 6\n- 发现的严重问题数: 2\n- 提出的改进建议数: 1\n\n**注意**：以上修复建议必须严格按照团队规范执行，尤其是第三方库替换和字典取值操作。",
-        "tools_used": [
-          "read_file",
-          "ast_analyze",
-          "search_coding_rules"
-        ],
-        "rag_recalled": [
-          "- 【星宇科技（虚构）内部 Python 业务研发规范 V2.0】\n\n1.网络请求组件规范：所有对外部第三方 API 的 HTTP 请求，严禁直接使用 requests 库或 urllib。 (相似度: 0.55)",
-          "- 6.字典取值规范：从字典中获取可能不存在的键时，除了使用 .get()，如果该字段属于核心业务字段，必须使用内部封装的 xingyu_safe_dict.safe_get() 方法。 (相似度: 0.70)"
-        ],
-        "tool_check_status": "Passed",
-        "tool_check_msg": "OK",
-        "steps": 4,
-        "redundancy": false,
-        "loop_circuit_breaker": false,
-        "judge_score_raw": 8,
-        "judge_reason": "报告准确指出了两个严重问题，但缺少对文件名的准确性确认，且建议添加文档字符串的改进建议不是必须项，影响完整性评分。",
-        "hallucination": false
-      },
-      {
-        "exec_status": "Success",
-        "time_cost_sec": 25.52,
-        "tokens": 9615,
-        "output_preview": "### 检索结果总结\n1. **`requests`**：\n   - 团队规范明确禁止直接使用 `requests` 库，所有对外部第三方 API 的 HTTP 请求必须使用公司自研组件。\n   - 但没有明确说明自研组件的名称。\n\n2. **`dict.get`**：\n   - 未检索到相关规范，可能意味着团队对字典取值操作没有特殊限制。\n\n### 审查报告\n\n#### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_dict.py` | 1 | 使用了被团队规范禁止的第三方库 `requests` | 高 | 替换为公司的自研 HTTP 请求组件 |\n\n#### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_dict.py` | 5 | 字典取值方式 `user_data.get(\"age\", 0)` 可以保持不变 | 团队未禁止此操作 |\n\n#### 总结 (Summary)\n- 审查行数: 6\n- 发现的严重问题数: 1\n- 提出的改进建议数: 1\n\n**下一步行动**：\n请确认团队推荐的 HTTP 请求组件名称（如 `xingyu_http`），我将协助更新代码以符合规范。",
+        "time_cost_sec": 33.72,
+        "tokens": 10352,
+        "output_preview": "审查工具未找到与 `db.query` 相关的直接规范，但鉴于代码中涉及数据库查询，需进一步明确公司内部对数据库查询的最佳实践。以下是根据常见安全原则和现有规范的审查报告：\n\n---\n\n## 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| test_cases/test_dict.py | 4 | SQL 注入风险：直接拼接用户输入（`uid`）到 SQL 语句中 | 高 | 使用参数化查询或预处理语句。如使用自研组件（如 `xingyu_db.query_safe`），需进一步确认规范。 |\n\n## 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| test_cases/test_dict.py | 1 | 为函数 `get_user_orders` 添加文档字符串 | 提高代码可读性和维护性 |\n| test_cases/test_dict.py | 1 | 重命名函数为 `query_user_orders`，以更明确其职责 | 符合单一职责原则 |\n\n## 总结 (Summary)\n- 审查行数: 6\n- 发现的严重问题数: 1\n- 提出的改进建议数: 2\n\n**下一步**:\n1. 确认公司内部是否有自研数据库查询组件（如 `xingyu_db`），并遵循其规范。\n2. 修正 SQL 注入问题，确保使用参数化查询或预处理语句。\n3. 完善代码文档和命名规范。",
         "tools_used": [
           "read_file",
           "search_coding_rules"
         ],
         "rag_recalled": [
-          "- 【星宇科技（虚构）内部 Python 业务研发规范 V2.0】\n\n1.网络请求组件规范：所有对外部第三方 API 的 HTTP 请求，严禁直接使用 requests 库或 urllib。 (相似度: 0.55)"
+          "- 4. 时间获取规范：严禁在业务代码中直接调用 datetime.datetime.now() 或 time.time()。必须使用 xingyu_time.get_current_timestamp()，该函数内部会自动处理多时区同步和服务器时间漂移补偿。 (RRF融合分: 0.0164)",
+          "- 24. 线程池规范：严禁通过 threading.Thread 手动创建大量线程，必须使用统一的 xingyu_threading.ThreadPoolManager 管理线程池，防止线程泄漏。 (RRF融合分: 0.0161)",
+          "- 17. 文件上传安全：处理用户上传的文件时，必须校验文件后缀名和 MIME 类型（白名单校验），防止上传恶意脚本（如 .sh, .exe）。 (RRF融合分: 0.0159)",
+          "- 8. 敏感信息脱敏：严禁在日志或异常堆栈中打印用户的明文密码、手机号、身份证号。必须使用 xingyu_masking.mask() 进行脱敏处理。 (RRF融合分: 0.0156)"
         ],
         "tool_check_status": "Passed",
         "tool_check_msg": "OK",
-        "steps": 3,
+        "steps": 2,
         "redundancy": false,
         "loop_circuit_breaker": false,
         "judge_score_raw": 7,
-        "judge_reason": "准确性较高，指出了使用 `requests` 库的问题，但完整性稍有欠缺，未提及代码中其他潜在问题。",
-        "hallucination": false
+        "judge_reason": "报告准确指出了 SQL 注入风险，但未发现其他潜在问题，且部分修复建议不够具体。",
+        "hallucination": false,
+        "hit_count": 0,
+        "missed_vulns": [
+          "IN 语句",
+          "JOIN",
+          "N+1",
+          "循环"
+        ],
+        "recall_rate": 0.0,
+        "ground_truth_score": 0.0,
+        "judge_details": {
+          "accuracy_score": 4,
+          "completeness_score": 2,
+          "actionability_score": 1,
+          "format_score": 1
+        },
+        "rag_hit_rate": 0.0,
+        "rag_mrr": 0.0
+      },
+      {
+        "exec_status": "Success",
+        "time_cost_sec": 27.74,
+        "tokens": 6571,
+        "output_preview": "### 代码审查报告\n\n#### 严重问题 (Critical Issues)\n\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| test_cases/test_dict.py | 4 | 直接拼接 SQL 查询字符串，存在 SQL 注入风险。 | 高危 | 使用参数化查询或预处理语句（ORM 或 SQL 参数绑定）。 |\n\n#### 改进建议 (Improvements)\n\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| test_cases/test_dict.py | 1 | 添加函数文档字符串（Docstring）。 | 提高代码可读性和可维护性。 |\n| test_cases/test_dict.py | 4 | 使用公司自研的安全查询组件或 ORM。 | 确保查询安全性和符合团队规范。 |\n\n#### 审查小结\n- 审查行数: 6\n- 发现的严重问题数: 1\n- 提出的改进建议数: 2\n\n#### 详细说明\n1. **SQL 注入风险**（行号 4）：函数中直接拼接 `user_id` 到 SQL 查询字符串中，这可能导致 SQL 注入攻击。例如，如果 `user_ids` 中包含恶意输入，攻击者可以通过注入代码来操纵查询。\n   - **修复建议**：\n     - 使用参数化查询或预处理语句（如 `db.query(\"SELECT * FROM orders WHERE user_id=?\", (uid,))`）。\n     - 如果团队有自研的安全查询组件（如 `xingyu_safe_query`），请务必使用该组件。\n\n2. **函数文档缺失**（行号 1）：当前函数 `get_user_orders` 没有文档说明，不易于理解其用途和参数。\n   - **修复建议**：添加文档字符串，说明函数的功能、参数和返回值。例如：\n     ```python\n     def get_user_orders(user_ids, db):\n         \"\"\"\n         根据用户ID列表查询用户的订单数据。\n         :param user_ids: 用户ID列表\n         :param db: 数据库连接对象\n         :return: 订单列表\n         \"\"\"\n     ```\n\n3. **公司自研组件**：请确保查询数据库时使用的是公司自研的安全组件，而非直接使用原生 SQL 拼接方式。这将符合团队的安全规范。\n\n如需进一步确认团队规范，可以调用 `search_coding_rules` 工具检索相关要求（例如 `search_coding_rules(query=\"SQL 查询\")`）。",
+        "tools_used": [
+          "read_file"
+        ],
+        "rag_recalled": [],
+        "tool_check_status": "Failed",
+        "tool_check_msg": "Missing: search_coding_rules",
+        "steps": 1,
+        "redundancy": false,
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 8,
+        "judge_reason": "报告准确指出了 SQL 注入风险，并提供了具体的修复建议，但存在一些细节上的不足。",
+        "hallucination": false,
+        "hit_count": 0,
+        "missed_vulns": [
+          "IN 语句",
+          "JOIN",
+          "N+1",
+          "循环"
+        ],
+        "recall_rate": 0.0,
+        "ground_truth_score": 0.0,
+        "judge_details": {
+          "accuracy_score": 4,
+          "completeness_score": 2,
+          "actionability_score": 2,
+          "format_score": 1
+        },
+        "rag_hit_rate": 0.0,
+        "rag_mrr": 0.0
       }
     ]
   },
@@ -225,37 +410,97 @@
     "e2e_status": "Stable",
     "pass_count": 3,
     "pass_k": 3,
-    "time_cost_sec": 20.72,
-    "tokens": 6186,
-    "output_preview": "### 审查报告\n\n#### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_basic.py` | 1-2 | 函数 `divide_numbers` 未处理除数为零的情况，会导致 `ZeroDivisionError` 异常。 | 高 | 添加对除数为零的检查，或使用异常捕获机制处理 `ZeroDivisionError`。 |\n\n#### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_basic.py` | 1 | 建议为函数 `divide_numbers` 添加文档字符串（Docstring），说明其功能和参数。 | 提高代码可读性和可维护性。 |\n| `test_cases/test_basic.py` | 2 | 建议在函数中添加对输入参数类型的检查（如 `isinstance(a, (int, float))`）。 | 避免因非数字输入导致运行时错误。 |\n\n#### 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 1\n- 提出的改进建议数: 2\n\n\n建议尽快修复严重问题，并根据改进建议优化代码。",
+    "time_cost_sec": 24.11,
+    "tokens": 7568,
+    "output_preview": "我已读取到 `test_cases/test_basic.py` 的内容如下：\n\n```python\ndef divide_numbers(a, b):\n    return a / b\n```\n\n接下来，我将对这段代码进行分析和审查。\n\n### 分析与审查步骤\n1. **代码风格与可读性**：\n   - 函数名 `divide_numbers` 清晰表达了其功能。\n   - 参数命名 `a` 和 `b` 虽然简短，但在数学计算上下文中是合理的，但仍可以更具体（例如 `dividend` 和 `divisor`）。\n   - 缩进和空格符合 PEP8 规范。\n\n2. **逻辑正确性**：\n   - 函数未处理除数为零的情况，这会导致 `ZeroDivisionError` 异常抛出。\n   - 缺乏输入验证（如非数值类型的输入可能会导致 `TypeError`）。\n\n3. **安全性**：\n   - 无硬编码密钥或敏感信息。\n   - 无 `eval()` 或 `exec()` 使用。\n   - 但未对输入进行验证，可能会引发安全问题。\n\n4. **可维护性**：\n   - 函数只做一件事，符合单一职责原则。\n   - 函数长度很短，符合良好实践。\n\n5. **团队内部规范**：\n   - 由于代码简单，暂时无需检索团队规范。\n\n### 审查报告\n\n#### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| test_cases/test_basic.py | 2 | 未处理除数为零的情况 | 高 | 添加除数为零的检查，抛出适当的异常（如 `ValueError`）。 |\n| test_cases/test_basic.py | 1 | 无输入验证 | 中 | 添加输入验证，确保 `a` 和 `b` 是数值类型（如使用 `isinstance`）。 |\n\n#### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| test_cases/test_basic.py | 1 | 参数命名可以更具体（如 `dividend` 和 `divisor`） | 提高代码可读性和维护性 |\n\n#### 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 2\n- 提出的改进建议数: 1\n\n如果需要，我可以进一步帮助修改代码或提供修复后的示例。",
     "tools_used": [
-      "read_file"
+      "read_file",
+      "ast_analyze"
     ],
     "rag_recalled": [],
     "tool_check_status": "Passed",
     "tool_check_msg": "OK",
-    "steps": 3,
+    "steps": 4,
+    "avg_steps": 1.3,
+    "rag_hit_rate": 1.0,
+    "rag_mrr": 1.0,
     "redundancy": false,
     "loop_circuit_breaker": false,
-    "score": 91.0,
-    "total_score": 91.0,
-    "tool_score": 30,
-    "performance_score": 16,
-    "stability_score": 20,
-    "quality_score": 25.0,
-    "judge_avg_raw": 8.33,
+    "score": 92.5,
+    "total_score": 92.5,
+    "tool_score": 25,
+    "performance_score": 12,
+    "stability_score": 15,
+    "rag_score": 15.0,
+    "quality_score": 25.5,
+    "recall_rate": 0.8333,
+    "missed_vulns": [],
+    "ground_truth_score": 12.5,
+    "judge_score": 13.0,
+    "judge_details": [
+      {
+        "accuracy_score": 4,
+        "completeness_score": 3,
+        "actionability_score": 2,
+        "format_score": 1
+      },
+      {
+        "accuracy_score": 4,
+        "completeness_score": 2,
+        "actionability_score": 2,
+        "format_score": 1
+      },
+      {
+        "accuracy_score": 4,
+        "completeness_score": 3,
+        "actionability_score": 2,
+        "format_score": 1
+      }
+    ],
+    "judge_avg_raw": 8.67,
     "judge_reasons": [
-      "报告准确指出了除数为零和输入类型检查的问题，但对文件路径和内容的描述与实际不符，且存在一些不必要的细节。",
-      "报告准确指出了除零错误的严重问题，并提出了合理的改进建议，但文件路径与实际不符。",
-      "准确性高，指出了除零错误的严重问题；完整性较好，提出了有用的改进建议；但报告中提到的文件名与实际代码不符，略微影响了准确性。"
+      "报告准确指出了原始代码中的问题，并提供了具体的修复建议，格式也符合要求。",
+      "报告准确指出了除零错误问题，并提供了具体的修复建议。同时，提出了合理的改进建议，但未发现其他潜在的逻辑错误或边界情况。",
+      "报告准确指出了存在的问题，并提供了具体的修复建议，格式也符合要求。"
     ],
     "has_hallucination": false,
     "attempts": [
       {
         "exec_status": "Success",
-        "time_cost_sec": 26.58,
-        "tokens": 6365,
-        "output_preview": "### 审查报告：`test_cases/test_basic.py`\n\n#### 代码概述\n文件 `test_cases/test_basic.py` 只包含一个名为 `divide_numbers` 的简单函数，用于实现两个数的除法运算。\n\n#### 详细审查\n1. **代码风格与可读性**\n   - 函数命名清晰，符合 PEP8 规范。\n   - 缩进和空格使用一致。\n\n2. **逻辑正确性**\n   - **边界情况处理不足**：\n     - 函数未处理除数为零（`b == 0`）的情况，会导致 `ZeroDivisionError` 异常。\n     - 未处理输入为 `None` 或其他非数值类型的情况。\n\n3. **安全性**\n   - 没有硬编码的密钥或其他敏感信息。\n   - 没有使用 `eval()` 或 `exec()`。\n\n4. **可维护性**\n   - 函数功能单一（只做除法运算），符合单一职责原则。\n   - 缺乏文档字符串（Docstring），建议补充。\n\n5. **团队内部规范（暂不明确）**\n   - 该函数未涉及数据库操作、文件读写或网络请求，因此无需调用 `search_coding_rules` 工具。\n\n---\n\n### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_basic.py` | 1 | 函数未处理除数为零的情况，会导致 `ZeroDivisionError`。 | 高 | 检查 `b` 是否为 0，若是则抛出 `ValueError` 或返回特定值。 |\n| `test_cases/test_basic.py` | 1 | 未校验输入是否为数值类型，可能导致 `TypeError`。 | 中 | 使用 `isinstance()` 校验输入类型，若非法则抛出异常。 |\n\n### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_basic.py` | 1 | 添加文档字符串（Docstring），说明函数的用途、输入和输出。 | 提高代码可读性和维护性。 |\n| `test_cases/test_basic.py` | 1 | 在测试用例中添加对异常情况的覆盖（如输入为空、除数为零）。 | 完善测试覆盖率。 |\n\n---\n\n### 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 2\n- 提出的改进建议数: 2\n\n请根据上述建议进行修改，确保代码的健壮性和可维护性。",
+        "time_cost_sec": 29.71,
+        "tokens": 9805,
+        "output_preview": "### 审查报告\n\n#### 文件: `test_cases/test_basic.py`\n\n#### 1. 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_basic.py` | 2 | 未处理除数为零的异常（ZeroDivisionError） | 高 | 在函数中添加异常处理逻辑，捕获 `ZeroDivisionError` 并给出明确的错误提示或返回值。 |\n\n#### 2. 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_basic.py` | 1 | 为函数 `divide_numbers` 添加文档字符串（Docstring） | 提高代码的可读性和可维护性，帮助其他开发者理解函数的功能和使用方式。 |\n| `test_cases/test_basic.py` | 1 | 考虑对输入参数 `a` 和 `b` 的类型进行检查（如是否为数字类型） | 避免因输入非数字类型导致的潜在运行时错误。 |\n\n#### 3. 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 1\n- 提出的改进建议数: 2\n\n### 详细说明\n1. **严重问题**:\n   - 函数 `divide_numbers` 直接执行除法操作 `a / b`，但没有处理 `b` 为零的情况。这会导致运行时抛出 `ZeroDivisionError` 异常。在生产环境中，这可能引发程序崩溃或不稳定的行为。\n\n2. **改进建议**:\n   - **文档字符串**: 为函数添加 Docstring，描述函数的功能、参数和返回值。\n   - **类型检查**: 在处理输入参数时，最好检查参数是否为数字类型（如 `int` 或 `float`），以避免输入错误类型时引发的异常。可以通过 `isinstance(a, (int, float))` 进行检查。\n\n### 修复示例\n以下是修复后的代码示例：\n```python\ndef divide_numbers(a, b):\n    \"\"\"Divide two numbers.\n    \n    Args:\n        a: Dividend.\n        b: Divisor.\n    \n    Returns:\n        float: The result of a divided by b.\n    \n    Raises:\n        ZeroDivisionError: If the divisor (b) is zero.\n        TypeError: If either a or b is not a number.\n    \"\"\"\n    if not isinstance(a, (int, float)) or not isinstance(b, (int, float)):\n        raise TypeError(\"Both a and b must be numbers.\")\n    if b == 0:\n        raise ZeroDivisionError(\"Divisor cannot be zero.\")\n    return a / b\n```\n\n这样可以显著提高函数的健壮性和可用性。",
+        "tools_used": [
+          "read_file",
+          "ast_analyze"
+        ],
+        "rag_recalled": [],
+        "tool_check_status": "Passed",
+        "tool_check_msg": "OK",
+        "steps": 2,
+        "redundancy": false,
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 9,
+        "judge_reason": "报告准确指出了原始代码中的问题，并提供了具体的修复建议，格式也符合要求。",
+        "hallucination": false,
+        "hit_count": 2,
+        "missed_vulns": [],
+        "recall_rate": 1.0,
+        "ground_truth_score": 15.0,
+        "judge_details": {
+          "accuracy_score": 4,
+          "completeness_score": 3,
+          "actionability_score": 2,
+          "format_score": 1
+        },
+        "rag_hit_rate": 1.0,
+        "rag_mrr": 1.0
+      },
+      {
+        "exec_status": "Success",
+        "time_cost_sec": 18.85,
+        "tokens": 6387,
+        "output_preview": "## 审查报告\n\n### 严重问题 (Critical Issues)\n| 文件                     | 行号 | 问题描述                          | 严重程度 | 修复建议                          |\n|------------------------|------|---------------------------------|----------|---------------------------------|\n| `test_cases/test_basic.py` | 2    | 未处理除零错误（`ZeroDivisionError`） | 高       | 在函数中添加对 `b == 0` 的检查或捕获 `ZeroDivisionError` |\n\n### 改进建议 (Improvements)\n| 文件                     | 行号 | 改进建议                          | 原因                          |\n|------------------------|------|--------------------------------|-----------------------------|\n| `test_cases/test_basic.py` | 1    | 添加函数文档字符串（Docstring） | 提高代码可读性和可维护性         |\n| `test_cases/test_basic.py` | 1    | 添加类型注解                    | 提高代码清晰度和 IDE 支持        |\n\n### 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 1\n- 提出的改进建议数: 2\n\n### 详细说明\n1. **严重问题**：\n   - 函数 `divide_numbers` 没有处理 `ZeroDivisionError` 的情况，当 `b` 为 `0` 时会直接抛出异常。建议在函数中添加对 `b == 0` 的检查或捕获 `ZeroDivisionError`，并返回适当的错误处理结果（如 `None` 或抛出自定义异常）。\n\n2. **改进建议**：\n   - 为函数 `divide_numbers` 添加文档字符串，说明函数的功能、参数和返回值。\n   - 为函数的参数和返回值添加类型注解，例如 `def divide_numbers(a: float, b: float) -> float:`，这样可以提高代码的清晰度和 IDE 支持的准确性。\n\n如果需要进一步修改或补充，请告诉我！",
         "tools_used": [
           "read_file"
         ],
@@ -266,14 +511,28 @@
         "redundancy": false,
         "loop_circuit_breaker": false,
         "judge_score_raw": 8,
-        "judge_reason": "报告准确指出了除数为零和输入类型检查的问题，但对文件路径和内容的描述与实际不符，且存在一些不必要的细节。",
-        "hallucination": false
+        "judge_reason": "报告准确指出了除零错误问题，并提供了具体的修复建议。同时，提出了合理的改进建议，但未发现其他潜在的逻辑错误或边界情况。",
+        "hallucination": false,
+        "hit_count": 1,
+        "missed_vulns": [
+          "除数为零"
+        ],
+        "recall_rate": 0.5,
+        "ground_truth_score": 7.5,
+        "judge_details": {
+          "accuracy_score": 4,
+          "completeness_score": 2,
+          "actionability_score": 2,
+          "format_score": 1
+        },
+        "rag_hit_rate": 1.0,
+        "rag_mrr": 1.0
       },
       {
         "exec_status": "Success",
-        "time_cost_sec": 12.74,
-        "tokens": 6115,
-        "output_preview": "根据读取到的文件内容，以下是针对 `test_cases/test_basic.py` 的审查报告：\n\n### 文件内容\n```python\n1    def divide_numbers(a, b):\n2        return a / b\n```\n\n---\n\n## 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_basic.py` | 1-2 | 函数 `divide_numbers` 没有处理除数为零的情况，会引发 `ZeroDivisionError`。 | 高 | 添加对 `b == 0` 的条件检查，并抛出具体异常或返回默认值。 |\n\n---\n\n## 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_basic.py` | 1 | 为函数 `divide_numbers` 添加文档字符串（Docstring），说明其功能、参数和返回值。 | 提高代码可读性和维护性。 |\n| `test_cases/test_basic.py` | 1 | 考虑为函数参数和返回值添加类型注解（例如 `a: float, b: float` -> `float`）。 | 增强代码的可读性和 IDE 提示支持。 |\n\n---\n\n## 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 1\n- 提出的改进建议数: 2",
+        "time_cost_sec": 23.78,
+        "tokens": 6512,
+        "output_preview": "我已读取到 `test_cases/test_basic.py` 的内容如下：\n\n```python\ndef divide_numbers(a, b):\n    return a / b\n```\n\n接下来，我将对这段代码进行分析和审查。\n\n### 分析与审查步骤\n1. **代码风格与可读性**：\n   - 函数名 `divide_numbers` 清晰表达了其功能。\n   - 参数命名 `a` 和 `b` 虽然简短，但在数学计算上下文中是合理的，但仍可以更具体（例如 `dividend` 和 `divisor`）。\n   - 缩进和空格符合 PEP8 规范。\n\n2. **逻辑正确性**：\n   - 函数未处理除数为零的情况，这会导致 `ZeroDivisionError` 异常抛出。\n   - 缺乏输入验证（如非数值类型的输入可能会导致 `TypeError`）。\n\n3. **安全性**：\n   - 无硬编码密钥或敏感信息。\n   - 无 `eval()` 或 `exec()` 使用。\n   - 但未对输入进行验证，可能会引发安全问题。\n\n4. **可维护性**：\n   - 函数只做一件事，符合单一职责原则。\n   - 函数长度很短，符合良好实践。\n\n5. **团队内部规范**：\n   - 由于代码简单，暂时无需检索团队规范。\n\n### 审查报告\n\n#### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| test_cases/test_basic.py | 2 | 未处理除数为零的情况 | 高 | 添加除数为零的检查，抛出适当的异常（如 `ValueError`）。 |\n| test_cases/test_basic.py | 1 | 无输入验证 | 中 | 添加输入验证，确保 `a` 和 `b` 是数值类型（如使用 `isinstance`）。 |\n\n#### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| test_cases/test_basic.py | 1 | 参数命名可以更具体（如 `dividend` 和 `divisor`） | 提高代码可读性和维护性 |\n\n#### 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 2\n- 提出的改进建议数: 1\n\n如果需要，我可以进一步帮助修改代码或提供修复后的示例。",
         "tools_used": [
           "read_file"
         ],
@@ -284,26 +543,20 @@
         "redundancy": false,
         "loop_circuit_breaker": false,
         "judge_score_raw": 9,
-        "judge_reason": "报告准确指出了除零错误的严重问题，并提出了合理的改进建议，但文件路径与实际不符。",
-        "hallucination": false
-      },
-      {
-        "exec_status": "Success",
-        "time_cost_sec": 22.85,
-        "tokens": 6078,
-        "output_preview": "### 审查报告\n\n#### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_basic.py` | 1-2 | 函数 `divide_numbers` 未处理除数为零的情况，会导致 `ZeroDivisionError` 异常。 | 高 | 添加对除数为零的检查，或使用异常捕获机制处理 `ZeroDivisionError`。 |\n\n#### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_basic.py` | 1 | 建议为函数 `divide_numbers` 添加文档字符串（Docstring），说明其功能和参数。 | 提高代码可读性和可维护性。 |\n| `test_cases/test_basic.py` | 2 | 建议在函数中添加对输入参数类型的检查（如 `isinstance(a, (int, float))`）。 | 避免因非数字输入导致运行时错误。 |\n\n#### 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 1\n- 提出的改进建议数: 2\n\n\n建议尽快修复严重问题，并根据改进建议优化代码。",
-        "tools_used": [
-          "read_file"
-        ],
-        "rag_recalled": [],
-        "tool_check_status": "Passed",
-        "tool_check_msg": "OK",
-        "steps": 1,
-        "redundancy": false,
-        "loop_circuit_breaker": false,
-        "judge_score_raw": 8,
-        "judge_reason": "准确性高，指出了除零错误的严重问题；完整性较好，提出了有用的改进建议；但报告中提到的文件名与实际代码不符，略微影响了准确性。",
-        "hallucination": false
+        "judge_reason": "报告准确指出了存在的问题，并提供了具体的修复建议，格式也符合要求。",
+        "hallucination": false,
+        "hit_count": 2,
+        "missed_vulns": [],
+        "recall_rate": 1.0,
+        "ground_truth_score": 15.0,
+        "judge_details": {
+          "accuracy_score": 4,
+          "completeness_score": 3,
+          "actionability_score": 2,
+          "format_score": 1
+        },
+        "rag_hit_rate": 1.0,
+        "rag_mrr": 1.0
       }
     ]
   },
@@ -314,9 +567,9 @@
     "e2e_status": "Stable",
     "pass_count": 3,
     "pass_k": 3,
-    "time_cost_sec": 11.01,
-    "tokens": 6016,
-    "output_preview": "## 严重问题 (Critical Issues)\n\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_syntax_error.py` | 1-2 | 函数定义不完整，缺少闭合括号和冒号 | 高 | 修复函数定义，确保语法正确性。例如：`def broken_function():` |\n| `test_cases/test_syntax_error.py` | 2 | 缺少闭合括号 | 高 | 在函数定义行结束时添加闭合括号和冒号 |\n\n## 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 2\n- 提出的改进建议数: 0\n\n### 说明\n文件中存在明显的语法错误，导致函数定义不完整。在 Python 中，函数定义必须以冒号 (`:`) 结束，且圆括号必须闭合。建议立即修复以避免运行时错误。",
+    "time_cost_sec": 18.44,
+    "tokens": 6247,
+    "output_preview": "## 审查报告: test_cases/test_syntax_error.py\n\n### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| test_cases/test_syntax_error.py | 1 | 函数定义不完整，缺少参数列表和结束括号。 | 高 | 补全函数定义，例如 `def broken_function():`。 |\n| test_cases/test_syntax_error.py | 2 | 缩进错误，`return True` 的缩进与函数体不一致。 | 高 | 确保 `return` 语句的缩进与函数体一致。 |\n\n### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| test_cases/test_syntax_error.py | 1 | 为函数添加参数列表或直接补全为空参数列表。 | 遵循 Python 语法规范，确保函数定义完整。 |\n| test_cases/test_syntax_error.py | 2 | 检查并修复缩进，确保与函数体一致。 | 保证代码可读性和逻辑正确性。 |\n\n### 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 2\n- 提出的改进建议数: 2\n\n建议修复后重新运行测试以确保代码语法正确性。",
     "tools_used": [
       "read_file"
     ],
@@ -324,27 +577,55 @@
     "tool_check_status": "Passed",
     "tool_check_msg": "OK",
     "steps": 3,
+    "avg_steps": 1.0,
+    "rag_hit_rate": 1.0,
+    "rag_mrr": 1.0,
     "redundancy": false,
     "loop_circuit_breaker": false,
-    "score": 94.0,
-    "total_score": 94.0,
-    "tool_score": 30,
-    "performance_score": 20,
-    "stability_score": 20,
-    "quality_score": 24.0,
-    "judge_avg_raw": 8.0,
+    "score": 98.5,
+    "total_score": 98.5,
+    "tool_score": 25,
+    "performance_score": 15,
+    "stability_score": 15,
+    "rag_score": 15.0,
+    "quality_score": 28.5,
+    "recall_rate": 1.0,
+    "missed_vulns": [],
+    "ground_truth_score": 15.0,
+    "judge_score": 13.5,
+    "judge_details": [
+      {
+        "accuracy_score": 4,
+        "completeness_score": 3,
+        "actionability_score": 2,
+        "format_score": 1
+      },
+      {
+        "accuracy_score": 4,
+        "completeness_score": 3,
+        "actionability_score": 2,
+        "format_score": 1
+      },
+      {
+        "accuracy_score": 4,
+        "completeness_score": 3,
+        "actionability_score": 2,
+        "format_score": 1
+      }
+    ],
+    "judge_avg_raw": 9.0,
     "judge_reasons": [
-      "准确性高，指出了函数定义不完整和代码块未对齐的问题；完整性较好，但未指出缩进问题；简洁性良好，内容精炼。",
-      "准确性高，指出了存在的语法错误；完整性较好，但未提及缩进问题；报告略长，可更简洁。",
-      "准确性高，指出了存在的语法错误；完整性较好，但总结中的改进建议数应为2而非0；简洁性尚可，但总结部分可以更简洁。"
+      "报告准确指出了函数定义的语法错误，并提供了具体的修复建议。格式也符合要求。",
+      "报告准确指出了原始代码中的语法错误，并提供了具体的修复建议。报告格式正确，包含了标准 Markdown 表格，并正确引用了行号。",
+      "报告准确指出了存在的语法错误，并提供了具体的修复建议，格式也符合要求。"
     ],
     "has_hallucination": false,
     "attempts": [
       {
         "exec_status": "Success",
-        "time_cost_sec": 12.44,
-        "tokens": 6029,
-        "output_preview": "## 审查报告\n\n### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_syntax_error.py` | 1 | 函数定义不完整，缺少参数列表和冒号 | 高 | 修正函数定义，确保参数列表完整并以冒号结尾 |\n| `test_cases/test_syntax_error.py` | 2 | 代码块未对齐 | 高 | 确保代码块正确对齐 |\n\n### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_syntax_error.py` | - | 添加函数文档字符串 (Docstring) | 遵循 PEP8 规范，提高代码可读性 |\n\n### 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 2\n- 提出的改进建议数: 1\n\n建议尽快修正这些问题，以确保代码能够正常运行并符合规范。",
+        "time_cost_sec": 22.65,
+        "tokens": 6208,
+        "output_preview": "### 审查报告\n\n#### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| test_syntax_error.py | 1-2 | 函数定义不完整，缺少参数列表和冒号 | 严重 | 修正函数定义为 `def broken_function():` |\n\n#### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| test_syntax_error.py | - | 添加完整的函数定义和语法检查 | 确保代码符合 Python 语法规范 |\n\n#### 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 1\n- 提出的改进建议数: 1\n\n**说明**  \n文件 `test_syntax_error.py` 中的代码存在严重的语法错误，函数 `broken_function` 的定义不完整，缺少参数列表和冒号。这是一个典型的语法错误，会导致程序无法运行。建议立即修复。",
         "tools_used": [
           "read_file"
         ],
@@ -354,15 +635,27 @@
         "steps": 1,
         "redundancy": false,
         "loop_circuit_breaker": false,
-        "judge_score_raw": 8,
-        "judge_reason": "准确性高，指出了函数定义不完整和代码块未对齐的问题；完整性较好，但未指出缩进问题；简洁性良好，内容精炼。",
-        "hallucination": false
+        "judge_score_raw": 9,
+        "judge_reason": "报告准确指出了函数定义的语法错误，并提供了具体的修复建议。格式也符合要求。",
+        "hallucination": false,
+        "hit_count": 0,
+        "missed_vulns": [],
+        "recall_rate": 1.0,
+        "ground_truth_score": 15.0,
+        "judge_details": {
+          "accuracy_score": 4,
+          "completeness_score": 3,
+          "actionability_score": 2,
+          "format_score": 1
+        },
+        "rag_hit_rate": 1.0,
+        "rag_mrr": 1.0
       },
       {
         "exec_status": "Success",
-        "time_cost_sec": 10.62,
-        "tokens": 6021,
-        "output_preview": "从读取的文件内容来看，`test_cases/test_syntax_error.py` 存在语法错误（Syntax Error）。以下是具体的审查报告：\n\n## 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| test_syntax_error.py | 1-2 | 函数定义不完整，缺少参数括号关闭和正确的函数体 | 严重 | 补全函数的定义，确保参数括号关闭，并且函数体逻辑正确 |\n\n## 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| test_syntax_error.py | 1-2 | 添加函数参数的闭合括号和完整的函数体 | 修复语法错误 |\n\n## 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 1\n- 提出的改进建议数: 1\n\n### 修复后的代码示例\n```python\ndef broken_function():\n    return True\n```",
+        "time_cost_sec": 15.78,
+        "tokens": 6246,
+        "output_preview": "造成的审查报告如下：\n\n### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| test_cases/test_syntax_error.py | 1-2 | 函数定义语法错误，缺少参数列表的闭合括号和冒号 | 高 | 修正函数定义语法，确保参数列表完整并以冒号结尾 |\n\n### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| test_cases/test_syntax_error.py | 1-2 | 建议为函数添加参数列表闭合括号和冒号 | 符合 Python 语法规则 |\n\n### 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 1\n- 提出的改进建议数: 1\n\n**说明：**\n1. 文件 `test_cases/test_syntax_error.py` 中的 `broken_function` 定义存在明显的语法错误，缺少参数列表的闭合括号和冒号。\n2. 建议修复为：\n   ```python\n   def broken_function():\n       return True\n   ```\n   或根据实际需求添加参数。",
         "tools_used": [
           "read_file"
         ],
@@ -372,15 +665,27 @@
         "steps": 1,
         "redundancy": false,
         "loop_circuit_breaker": false,
-        "judge_score_raw": 8,
-        "judge_reason": "准确性高，指出了存在的语法错误；完整性较好，但未提及缩进问题；报告略长，可更简洁。",
-        "hallucination": false
+        "judge_score_raw": 9,
+        "judge_reason": "报告准确指出了原始代码中的语法错误，并提供了具体的修复建议。报告格式正确，包含了标准 Markdown 表格，并正确引用了行号。",
+        "hallucination": false,
+        "hit_count": 0,
+        "missed_vulns": [],
+        "recall_rate": 1.0,
+        "ground_truth_score": 15.0,
+        "judge_details": {
+          "accuracy_score": 4,
+          "completeness_score": 3,
+          "actionability_score": 2,
+          "format_score": 1
+        },
+        "rag_hit_rate": 1.0,
+        "rag_mrr": 1.0
       },
       {
         "exec_status": "Success",
-        "time_cost_sec": 9.98,
-        "tokens": 5999,
-        "output_preview": "## 严重问题 (Critical Issues)\n\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_syntax_error.py` | 1-2 | 函数定义不完整，缺少闭合括号和冒号 | 高 | 修复函数定义，确保语法正确性。例如：`def broken_function():` |\n| `test_cases/test_syntax_error.py` | 2 | 缺少闭合括号 | 高 | 在函数定义行结束时添加闭合括号和冒号 |\n\n## 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 2\n- 提出的改进建议数: 0\n\n### 说明\n文件中存在明显的语法错误，导致函数定义不完整。在 Python 中，函数定义必须以冒号 (`:`) 结束，且圆括号必须闭合。建议立即修复以避免运行时错误。",
+        "time_cost_sec": 16.9,
+        "tokens": 6287,
+        "output_preview": "## 审查报告: test_cases/test_syntax_error.py\n\n### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| test_cases/test_syntax_error.py | 1 | 函数定义不完整，缺少参数列表和结束括号。 | 高 | 补全函数定义，例如 `def broken_function():`。 |\n| test_cases/test_syntax_error.py | 2 | 缩进错误，`return True` 的缩进与函数体不一致。 | 高 | 确保 `return` 语句的缩进与函数体一致。 |\n\n### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| test_cases/test_syntax_error.py | 1 | 为函数添加参数列表或直接补全为空参数列表。 | 遵循 Python 语法规范，确保函数定义完整。 |\n| test_cases/test_syntax_error.py | 2 | 检查并修复缩进，确保与函数体一致。 | 保证代码可读性和逻辑正确性。 |\n\n### 总结 (Summary)\n- 审查行数: 2\n- 发现的严重问题数: 2\n- 提出的改进建议数: 2\n\n建议修复后重新运行测试以确保代码语法正确性。",
         "tools_used": [
           "read_file"
         ],
@@ -390,9 +695,21 @@
         "steps": 1,
         "redundancy": false,
         "loop_circuit_breaker": false,
-        "judge_score_raw": 8,
-        "judge_reason": "准确性高，指出了存在的语法错误；完整性较好，但总结中的改进建议数应为2而非0；简洁性尚可，但总结部分可以更简洁。",
-        "hallucination": false
+        "judge_score_raw": 9,
+        "judge_reason": "报告准确指出了存在的语法错误，并提供了具体的修复建议，格式也符合要求。",
+        "hallucination": false,
+        "hit_count": 0,
+        "missed_vulns": [],
+        "recall_rate": 1.0,
+        "ground_truth_score": 15.0,
+        "judge_details": {
+          "accuracy_score": 4,
+          "completeness_score": 3,
+          "actionability_score": 2,
+          "format_score": 1
+        },
+        "rag_hit_rate": 1.0,
+        "rag_mrr": 1.0
       }
     ]
   },
@@ -403,8 +720,8 @@
     "e2e_status": "Stable",
     "pass_count": 3,
     "pass_k": 3,
-    "time_cost_sec": 5.52,
-    "tokens": 5821,
+    "time_cost_sec": 5.84,
+    "tokens": 6041,
     "output_preview": "文件 `test_cases/not_exist.py` 不存在，无法进行审查。请确认文件路径是否正确或文件是否已上传。",
     "tools_used": [
       "read_file"
@@ -413,44 +730,54 @@
     "tool_check_status": "Passed",
     "tool_check_msg": "OK",
     "steps": 3,
+    "avg_steps": 1.0,
+    "rag_hit_rate": 1.0,
+    "rag_mrr": 1.0,
     "redundancy": false,
     "loop_circuit_breaker": false,
     "score": 100.0,
     "total_score": 100.0,
-    "tool_score": 30,
-    "performance_score": 20,
-    "stability_score": 20,
+    "tool_score": 25,
+    "performance_score": 15,
+    "stability_score": 15,
+    "rag_score": 15.0,
     "quality_score": 30.0,
+    "recall_rate": 1.0,
+    "missed_vulns": [],
+    "ground_truth_score": 15.0,
+    "judge_score": 15.0,
+    "judge_details": [
+      {
+        "accuracy_score": 4,
+        "completeness_score": 3,
+        "actionability_score": 2,
+        "format_score": 1
+      },
+      {
+        "accuracy_score": 4,
+        "completeness_score": 3,
+        "actionability_score": 2,
+        "format_score": 1
+      },
+      {
+        "accuracy_score": 4,
+        "completeness_score": 3,
+        "actionability_score": 2,
+        "format_score": 1
+      }
+    ],
     "judge_avg_raw": 10.0,
     "judge_reasons": [
-      "正确指出文件不存在，诚实可靠。",
-      "正确指出文件不存在，诚实可靠。",
-      "正确指出文件不存在，诚实可靠。"
+      "Agent 诚实报告文件不存在，符合要求。",
+      "Agent 诚实报告文件不存在，且格式正确。",
+      "Agent 诚实报告文件不存在，符合要求。"
     ],
     "has_hallucination": false,
     "attempts": [
       {
         "exec_status": "Success",
-        "time_cost_sec": 5.81,
-        "tokens": 5822,
-        "output_preview": "审查的文件 `test_cases/not_exist.py` 不存在，无法进行审查。请确认文件路径是否正确或文件是否已上传。",
-        "tools_used": [
-          "read_file"
-        ],
-        "rag_recalled": [],
-        "tool_check_status": "Passed",
-        "tool_check_msg": "OK",
-        "steps": 1,
-        "redundancy": false,
-        "loop_circuit_breaker": false,
-        "judge_score_raw": 10,
-        "judge_reason": "正确指出文件不存在，诚实可靠。",
-        "hallucination": false
-      },
-      {
-        "exec_status": "Success",
-        "time_cost_sec": 5.42,
-        "tokens": 5821,
+        "time_cost_sec": 4.76,
+        "tokens": 6009,
         "output_preview": "文件 `test_cases/not_exist.py` 不存在，无法进行审查。请确认文件路径是否正确或文件是否已上传。",
         "tools_used": [
           "read_file"
@@ -462,13 +789,55 @@
         "redundancy": false,
         "loop_circuit_breaker": false,
         "judge_score_raw": 10,
-        "judge_reason": "正确指出文件不存在，诚实可靠。",
-        "hallucination": false
+        "judge_reason": "Agent 诚实报告文件不存在，符合要求。",
+        "hallucination": false,
+        "hit_count": 0,
+        "missed_vulns": [],
+        "recall_rate": 1.0,
+        "ground_truth_score": 15.0,
+        "judge_details": {
+          "accuracy_score": 4,
+          "completeness_score": 3,
+          "actionability_score": 2,
+          "format_score": 1
+        },
+        "rag_hit_rate": 1.0,
+        "rag_mrr": 1.0
       },
       {
         "exec_status": "Success",
-        "time_cost_sec": 5.34,
-        "tokens": 5821,
+        "time_cost_sec": 7.73,
+        "tokens": 6104,
+        "output_preview": "审查结果：\n\n### 文件不存在 (File Not Found)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| test_cases/not_exist.py | - | 文件不存在 | 高 | 检查文件路径是否正确 |\n\n## 总结 (Summary)\n- 审查行数: 0\n- 发现的严重问题数: 1\n- 提出的改进建议数: 0\n\n**文件 `test_cases/not_exist.py` 不存在，请确认路径是否正确。**",
+        "tools_used": [
+          "read_file"
+        ],
+        "rag_recalled": [],
+        "tool_check_status": "Passed",
+        "tool_check_msg": "OK",
+        "steps": 1,
+        "redundancy": false,
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 10,
+        "judge_reason": "Agent 诚实报告文件不存在，且格式正确。",
+        "hallucination": false,
+        "hit_count": 0,
+        "missed_vulns": [],
+        "recall_rate": 1.0,
+        "ground_truth_score": 15.0,
+        "judge_details": {
+          "accuracy_score": 4,
+          "completeness_score": 3,
+          "actionability_score": 2,
+          "format_score": 1
+        },
+        "rag_hit_rate": 1.0,
+        "rag_mrr": 1.0
+      },
+      {
+        "exec_status": "Success",
+        "time_cost_sec": 5.02,
+        "tokens": 6009,
         "output_preview": "文件 `test_cases/not_exist.py` 不存在，无法进行审查。请确认文件路径是否正确或文件是否已上传。",
         "tools_used": [
           "read_file"
@@ -480,8 +849,20 @@
         "redundancy": false,
         "loop_circuit_breaker": false,
         "judge_score_raw": 10,
-        "judge_reason": "正确指出文件不存在，诚实可靠。",
-        "hallucination": false
+        "judge_reason": "Agent 诚实报告文件不存在，符合要求。",
+        "hallucination": false,
+        "hit_count": 0,
+        "missed_vulns": [],
+        "recall_rate": 1.0,
+        "ground_truth_score": 15.0,
+        "judge_details": {
+          "accuracy_score": 4,
+          "completeness_score": 3,
+          "actionability_score": 2,
+          "format_score": 1
+        },
+        "rag_hit_rate": 1.0,
+        "rag_mrr": 1.0
       }
     ]
   },
@@ -492,24 +873,42 @@
     "e2e_status": "Stable",
     "pass_count": 3,
     "pass_k": 3,
-    "time_cost_sec": 19.66,
-    "tokens": 9695,
-    "output_preview": "从 `git_diff` 的结果来看，当前工作区有多个文件被修改。接下来我将逐个审查这些文件的改动内容。为了确保审查的准确性，我将首先读取这些文件的完整内容：\n\n1. **README.md**\n2. **corecoder/coding_rules.txt**\n3. **corecoder/llm.py**\n4. **corecoder/prompt.py**\n5. **eval_results.json**\n6. **generate_report.py**\n7. **review_report.md**\n8. **run_eval.py**\n9. **test_cases.json**\n10. **test_cases/test_dict.py**\n\n我将从 `README.md` 开始审查，随后逐步审查其他文件。是否需要优先审查某个特定文件？例如 `corecoder/llm.py` 或 `test_cases/test_dict.py`？",
+    "time_cost_sec": 34.78,
+    "tokens": 10659,
+    "output_preview": "### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `corecoder/agent.py` | 158-161 | 在后台线程中未处理线程异常，可能导致线程静默失败。 | 高 | 添加线程异常处理逻辑，记录异常日志。 |\n| `corecoder/agent.py` | 30-39 | `disable_memory_write` 参数的默认值未明确文档化，可能导致误解。 | 中 | 在 `__init__` 方法中添加对该参数的文档说明。 |\n\n### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `corecoder/agent.py` | 118 | `_maybe_save_memory` 方法调用时未检查 `response_content` 是否为 None。 | 可能导致 NPE 异常，建议添加输入检查。 |\n| `corecoder/agent.py` | 158 | 后台线程的异常处理仅打印日志，未统一到日志系统。 | 建议使用团队日志工具（如 `xy_logger`）记录异常。 |\n| `corecoder/coding_rules.txt` | - | 未提供具体变更内容，无法审查文本文件的具体修改。 | 建议在提交时提供注释或说明修改目的。 |\n\n### 总结 (Summary)\n- 审查行数: 约 200 行\n- 发现的严重问题数: 2\n- 提出的改进建议数: 3\n\n**下一步建议**:\n1. 调用 `git_diff_file` 查看 `corecoder/coding_rules.txt` 的完整改动，以进一步审查其内容是否符合团队规范。\n2. 调用 `search_coding_rules` 工具检查 `threading` 和 `xy_logger` 的使用是否符合团队规范。",
     "tools_used": [
-      "git_diff"
+      "git_diff",
+      "git_diff_file",
+      "search_coding_rules"
     ],
-    "rag_recalled": [],
+    "rag_recalled": [
+      "- 24. 线程池规范：严禁通过 threading.Thread 手动创建大量线程，必须使用统一的 xingyu_threading.ThreadPoolManager 管理线程池，防止线程泄漏。 (RRF融合分: 0.0164)",
+      "- 25. 锁释放规范：在使用 threading.Lock 或分布式锁时，必须在 try-finally 块中释放锁，或使用 with 上下文管理器，严禁在锁未释放的情况下 return 或 raise。 (RRF融合分: 0.0161)"
+    ],
     "tool_check_status": "Passed",
     "tool_check_msg": "OK",
-    "steps": 3,
+    "steps": 5,
+    "avg_steps": 1.7,
+    "rag_hit_rate": 1.0,
+    "rag_mrr": 1.0,
     "redundancy": false,
     "loop_circuit_breaker": false,
-    "score": 87.0,
-    "total_score": 87.0,
-    "tool_score": 30,
-    "performance_score": 16,
-    "stability_score": 20,
-    "quality_score": 21.0,
+    "score": 86.5,
+    "total_score": 86.5,
+    "tool_score": 25,
+    "performance_score": 6,
+    "stability_score": 15,
+    "rag_score": 15.0,
+    "quality_score": 25.5,
+    "recall_rate": 1.0,
+    "missed_vulns": [],
+    "ground_truth_score": 15.0,
+    "judge_score": 10.5,
+    "judge_details": [
+      {},
+      {},
+      {}
+    ],
     "judge_avg_raw": 7.0,
     "judge_reasons": [
       "无直接代码文件，跳过裁判",
@@ -520,27 +919,39 @@
     "attempts": [
       {
         "exec_status": "Success",
-        "time_cost_sec": 21.87,
-        "tokens": 9750,
-        "output_preview": "### 审查报告\n\n#### 严重问题 (Critical Issues)\n暂无严重问题。\n\n#### 改进建议 (Improvements)\n1. **README.md**\n   - **行号**: 69\n   - **改进建议**: 建议将 `JUDGE_API_KEY` 和其他敏感信息（如 `CORECODER_API_KEY`）的硬编码移除，改用环境变量或配置文件管理。\n   - **原因**: 硬编码的密钥和敏感信息可能导致安全问题，尤其是在代码版本控制中。\n\n2. **README.md**\n   - **行号**: 237\n   - **改进建议**: 在评分规则中，建议明确裁判模型的评分标准，并在报告中展示详细评分细节。\n   - **原因**: 评分标准的透明性有助于用户理解评分结果，并提升报告的可信度。\n\n3. **corecoder/coding_rules.txt**\n   - **行号**: 6\n   - **改进建议**: 确保 `xingyu_safe_dict.safe_get()` 方法的文档清晰，并提供使用示例。\n   - **原因**: 规范的文档化有助于团队成员的快速理解和正确使用。\n\n4. **corecoder/llm.py**\n   - **行号**: 52\n   - **改进建议**: 建议将 `_STREAM_GARBAGE_TOKENS` 定义为不可变集合（如 `frozenset`），以提高性能和安全性。\n   - **原因**: 不可变集合更适合用于常量定义。\n\n5. **corecoder/prompt.py**\n   - **行号**: 77\n   - **改进建议**: 在审查流程中提到的强制前置规则，建议在文档中进一步细化，例如 `read_file` 失败的场景处理。\n   - **原因**: 提升用户对审查流程的理解和执行效率。\n\n#### 总结 (Summary)\n- 审查行数: 约 200 行\n- 发现的严重问题数: 0\n- 提出的改进建议数: 5\n\n**建议用户根据改进建议逐步优化代码，提升代码质量和可维护性。**",
+        "time_cost_sec": 56.3,
+        "tokens": 15871,
+        "output_preview": "### 完整审查报告\n\n#### 1. 文件 `corecoder/agent.py` 的改动审查\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| corecoder/agent.py | 30 | 新增 `disable_memory_write` 参数 | 低 | 确保在文档中明确该参数的用途。 |\n| corecoder/agent.py | 161-182 | 使用 `threading.Thread` 手动创建线程 | 高 | 违反了团队的线程池规范（24条）。必须改用 `xingyu_threading.ThreadPoolManager` 管理线程池。 |\n| corecoder/agent.py | 161-182 | 异步保存长期记忆逻辑 | 中 | 确保线程安全，避免竞态条件。 |\n\n#### 2. 文件 `corecoder/coding_rules.txt` 的改动审查\n该文件更新为团队的 Python 业务研发规范 V3.0，包含了更多严格的安全和工程约束条款。以下是新增的重要规范：\n- **网络通信与外部依赖**：明确了 `xingyu_http.SafeClient`、`xingyu_rpc.Client` 的使用规范。\n- **时间与日志处理**：禁止直接使用 `datetime.now()`，必须使用 `xingyu_time.get_current_timestamp()`。\n- **数据库与缓存操作**：特别强调了 `xingyu_safe_dict.safe_get()` 和 `xingyu_cache.gen_key()` 的使用。\n- **并发与异步编程**：禁止手动创建线程，必须使用 `xingyu_threading.ThreadPoolManager`。\n\n#### 3. 其他文件的初步审查\n由于其他文件的改动未提供完整 diff 内容，建议优先审查以下文件：\n- `corecoder/tools/memory_tool.py`\n- `corecoder/tools/rag_tool.py`\n- `test_cases/test_dict.py`\n- `test_cases/test_private.py`\n\n### 审查总结\n- **审查行数**: 约 200 行（部分 diff 被截断）。\n- **发现的严重问题数**: 1（手动创建线程违反团队规范）。\n- **提出的改进建议数**: 3。\n\n### 下一步建议\n1. **修复 `corecoder/agent.py` 中的线程问题**：将 `threading.Thread` 替换为 `xingyu_threading.ThreadPoolManager`。\n2. **进一步审查其他文件**：使用 `git_diff_file` 查看剩余文件的完整改动。\n3. **更新文档**：确保新增的 `disable_memory_write` 参数在文档中明确说明。\n\n如果需要查看其他文件的完整改动或进一步建议，请告诉我！",
         "tools_used": [
-          "git_diff"
+          "git_diff",
+          "git_diff_file",
+          "search_coding_rules"
         ],
-        "rag_recalled": [],
+        "rag_recalled": [
+          "- 24. 线程池规范：严禁通过 threading.Thread 手动创建大量线程，必须使用统一的 xingyu_threading.ThreadPoolManager 管理线程池，防止线程泄漏。 (RRF融合分: 0.0164)",
+          "- 25. 锁释放规范：在使用 threading.Lock 或分布式锁时，必须在 try-finally 块中释放锁，或使用 with 上下文管理器，严禁在锁未释放的情况下 return 或 raise。 (RRF融合分: 0.0161)"
+        ],
         "tool_check_status": "Passed",
         "tool_check_msg": "OK",
-        "steps": 1,
+        "steps": 3,
         "redundancy": false,
         "loop_circuit_breaker": false,
         "judge_score_raw": 7,
         "judge_reason": "无直接代码文件，跳过裁判",
-        "hallucination": false
+        "hallucination": false,
+        "hit_count": 0,
+        "missed_vulns": [],
+        "recall_rate": 1.0,
+        "ground_truth_score": 15.0,
+        "judge_details": {},
+        "rag_hit_rate": 1.0,
+        "rag_mrr": 1.0
       },
       {
         "exec_status": "Success",
-        "time_cost_sec": 26.14,
-        "tokens": 9847,
-        "output_preview": "### 审查结果\n\n以下是对当前工作区未提交改动的审查报告：\n\n#### 1. `README.md`\n- **改进建议**:\n  | 行号 | 改进建议 | 原因 |\n  |------|----------|------|\n  | 69   | 建议明确说明 `JUDGE_API_KEY` 的获取方式和安全性要求 | 新增的环境变量需要明确其用途和安全要求，避免误用或泄漏。 |\n\n#### 2. `corecoder/coding_rules.txt`\n- **严重问题 (Critical Issues)**:\n  | 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n  |------|------|----------|----------|----------|\n  | 所有行 | 规范更新为 `V2.0`，但未明确新旧规范的迁移计划 | 高 | 应提供一个过渡期说明，并标记哪些规范是新增或修改的。 |\n\n#### 3. `corecoder/llm.py`\n- **改进建议**:\n  | 行号 | 改进建议 | 原因 |\n  |------|----------|------|\n  | 52   | 增加对 `_STREAM_GARBAGE_TOKENS` 的注释，说明其来源 | 帮助后续维护者理解这些乱码 Token 的背景。 |\n  | 152  | 检查 `_clean_stream_text` 是否会对模型正常输出造成误判 | 确保清洗逻辑不会误删有效内容。 |\n\n#### 4. `corecoder/prompt.py`\n- **改进建议**:\n  | 行号 | 改进建议 | 原因 |\n  |------|----------|------|\n  | 77   | 新增的强制前置规则需确保与团队现有的审查流程兼容 | 避免流程冲突。 |\n\n#### 5. `corecoder/qdrant_data/collection/coding_rules/storage.sqlite`\n- **注意**：\n  - 二进制文件无具体改动内容，建议审查其版本控制记录以确保一致性。\n\n#### 6. `eval_results.json`\n- **问题**:\n  - 由于内容复杂，建议使用 `git_diff_file` 查看完整改动内容。\n\n### 总结 (Summary)\n- 审查行数: 约 200 行\n- 发现的严重问题数: 1\n- 提出的改进建议数: 4\n\n下一步可针对需要深入审查的文件（如 `eval_results.json`）调用 `git_diff_file` 查看完整内容。是否需要进一步分析？",
+        "time_cost_sec": 27.33,
+        "tokens": 8091,
+        "output_preview": "\n\n根据 `git_diff` 的结果，工作区目前有 12 个文件的未提交改动。以下是对这些改动的初步审查报告：\n\n---\n\n## 严重问题 (Critical Issues)\n\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `corecoder/agent.py` | 37 | 线程安全：新增的 `disable_memory_write` 属性未使用锁保护，在多线程环境下可能引发竞态条件。 | 高 | 使用 `threading.Lock` 保护 `disable_memory_write` 属性的读写操作。 |\n| `corecoder/agent.py` | 161-189 | 异步线程可能阻塞主流程：`_extract_and_save_memory` 方法启动的线程未处理资源清理问题（如数据库连接泄漏）。 | 中 | 确保线程中使用的资源（如数据库连接）在异常或完成时正确释放。 |\n| `corecoder/agent.py` | 183 | 日志记录缺失：捕获异常时仅打印到控制台，未使用日志系统。 | 低 | 使用公司规范的日志组件（如 `xy_logger`）记录异常。 |\n\n---\n\n## 改进建议 (Improvements)\n\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `corecoder/agent.py` | 30-31 | 新增参数 `disable_memory_write` 需要补充文档字符串（Docstring）。 | 提高代码可读性和维护性。 |\n| `corecoder/agent.py` | 177 | 线程任务应限制最大运行时间：避免因长时间运行的任务影响主流程性能。 | 防止线程任务失控。 |\n| `corecoder/agent.py` | 183 | 异常日志应包含上下文信息（如用户输入和响应内容）。 | 便于排查问题。 |\n\n---\n\n## 总结 (Summary)\n- 审查行数: ~200 行\n- 发现的严重问题数: 3\n- 提出的改进建议数: 3\n\n---\n\n请重点关注 **线程安全问题** 和 **日志记录的规范性**。如果需要进一步查看某个文件的完整改动或检索团队规范（如日志组件的使用），请告知我具体文件路径或关键词。",
         "tools_used": [
           "git_diff"
         ],
@@ -552,13 +963,20 @@
         "loop_circuit_breaker": false,
         "judge_score_raw": 7,
         "judge_reason": "无直接代码文件，跳过裁判",
-        "hallucination": false
+        "hallucination": false,
+        "hit_count": 0,
+        "missed_vulns": [],
+        "recall_rate": 1.0,
+        "ground_truth_score": 15.0,
+        "judge_details": {},
+        "rag_hit_rate": 1.0,
+        "rag_mrr": 1.0
       },
       {
         "exec_status": "Success",
-        "time_cost_sec": 10.96,
-        "tokens": 9488,
-        "output_preview": "从 `git_diff` 的结果来看，当前工作区有多个文件被修改。接下来我将逐个审查这些文件的改动内容。为了确保审查的准确性，我将首先读取这些文件的完整内容：\n\n1. **README.md**\n2. **corecoder/coding_rules.txt**\n3. **corecoder/llm.py**\n4. **corecoder/prompt.py**\n5. **eval_results.json**\n6. **generate_report.py**\n7. **review_report.md**\n8. **run_eval.py**\n9. **test_cases.json**\n10. **test_cases/test_dict.py**\n\n我将从 `README.md` 开始审查，随后逐步审查其他文件。是否需要优先审查某个特定文件？例如 `corecoder/llm.py` 或 `test_cases/test_dict.py`？",
+        "time_cost_sec": 20.71,
+        "tokens": 8014,
+        "output_preview": "### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `corecoder/agent.py` | 158-161 | 在后台线程中未处理线程异常，可能导致线程静默失败。 | 高 | 添加线程异常处理逻辑，记录异常日志。 |\n| `corecoder/agent.py` | 30-39 | `disable_memory_write` 参数的默认值未明确文档化，可能导致误解。 | 中 | 在 `__init__` 方法中添加对该参数的文档说明。 |\n\n### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `corecoder/agent.py` | 118 | `_maybe_save_memory` 方法调用时未检查 `response_content` 是否为 None。 | 可能导致 NPE 异常，建议添加输入检查。 |\n| `corecoder/agent.py` | 158 | 后台线程的异常处理仅打印日志，未统一到日志系统。 | 建议使用团队日志工具（如 `xy_logger`）记录异常。 |\n| `corecoder/coding_rules.txt` | - | 未提供具体变更内容，无法审查文本文件的具体修改。 | 建议在提交时提供注释或说明修改目的。 |\n\n### 总结 (Summary)\n- 审查行数: 约 200 行\n- 发现的严重问题数: 2\n- 提出的改进建议数: 3\n\n**下一步建议**:\n1. 调用 `git_diff_file` 查看 `corecoder/coding_rules.txt` 的完整改动，以进一步审查其内容是否符合团队规范。\n2. 调用 `search_coding_rules` 工具检查 `threading` 和 `xy_logger` 的使用是否符合团队规范。",
         "tools_used": [
           "git_diff"
         ],
@@ -570,7 +988,506 @@
         "loop_circuit_breaker": false,
         "judge_score_raw": 7,
         "judge_reason": "无直接代码文件，跳过裁判",
-        "hallucination": false
+        "hallucination": false,
+        "hit_count": 0,
+        "missed_vulns": [],
+        "recall_rate": 1.0,
+        "ground_truth_score": 15.0,
+        "judge_details": {},
+        "rag_hit_rate": 1.0,
+        "rag_mrr": 1.0
+      }
+    ]
+  },
+  {
+    "id": 7,
+    "category": "语义鸿沟（向量检索专项）",
+    "status": "Stable",
+    "e2e_status": "Stable",
+    "pass_count": 3,
+    "pass_k": 3,
+    "time_cost_sec": 27.49,
+    "tokens": 9926,
+    "output_preview": "## 审查报告\n\n### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| test_cases/test_semantic.py | 4 | 使用了 `time.sleep()`，违反了异步阻塞红线规范 | 高 | 在协程函数中应使用 `await asyncio.sleep()` 替代 `time.sleep()`，或使用公司推荐的异步解决方案。 |\n\n### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| test_cases/test_semantic.py | 3 | 为函数 `wait_for_response()` 添加文档字符串（Docstring） | 提升代码可读性和维护性 |\n| test_cases/test_semantic.py | 1 | 导入 `time` 模块，但在代码中未充分体现其用途 | 可以移除未使用的导入以避免混淆 |\n\n### 总结 (Summary)\n- 审查行数: 4\n- 发现的严重问题数: 1\n- 提出的改进建议数: 2\n\n**特别关注**：  \n严重问题中提到的异步阻塞红线规范（`time.sleep()`），必须立即修复以避免影响系统性能。建议查阅公司内部异步编程规范或联系相关团队负责人获取进一步指导。",
+    "tools_used": [
+      "read_file",
+      "search_coding_rules",
+      "ast_analyze"
+    ],
+    "rag_recalled": [
+      "- 23. 异步阻塞红线：在 async 定义的协程函数中，严禁调用 time.sleep()、requests.get() 等同步阻塞方法，必须使用 await asyncio.sleep() 或 aiohttp。 (RRF融合分: 0.0164)"
+    ],
+    "tool_check_status": "Passed",
+    "tool_check_msg": "OK",
+    "steps": 7,
+    "avg_steps": 2.3,
+    "rag_hit_rate": 1.0,
+    "rag_mrr": 1.0,
+    "redundancy": false,
+    "loop_circuit_breaker": false,
+    "score": 89.5,
+    "total_score": 89.5,
+    "tool_score": 25,
+    "performance_score": 9,
+    "stability_score": 15,
+    "rag_score": 15.0,
+    "quality_score": 25.5,
+    "recall_rate": 1.0,
+    "missed_vulns": [],
+    "ground_truth_score": 15.0,
+    "judge_score": 10.5,
+    "judge_details": [
+      {
+        "accuracy_score": 3,
+        "completeness_score": 2,
+        "actionability_score": 2,
+        "format_score": 1
+      },
+      {
+        "accuracy_score": 4,
+        "completeness_score": 2,
+        "actionability_score": 1,
+        "format_score": 1
+      },
+      {
+        "accuracy_score": 3,
+        "completeness_score": 2,
+        "actionability_score": 2,
+        "format_score": 1
+      }
+    ],
+    "judge_avg_raw": 7.0,
+    "judge_reasons": [
+      "报告中指出的严重问题和改进建议部分符合规范，但存在一些不准确和不完整的地方。",
+      "报告指出了一个关键问题，但存在一些不准确和不完整的部分。",
+      "报告中指出的问题和改进建议基本准确，但存在一些不完全符合参考规范的情况。"
+    ],
+    "has_hallucination": false,
+    "attempts": [
+      {
+        "exec_status": "Success",
+        "time_cost_sec": 33.25,
+        "tokens": 10171,
+        "output_preview": "### 审查结果\n\n#### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_semantic.py` | 4 | 在协程函数中使用了 `time.sleep()`，违反了异步阻塞红线 | 高 | 改用 `await asyncio.sleep(5)` 并确保函数是 `async def` 定义的协程 |\n\n#### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_semantic.py` | 1 | 添加函数文档字符串（Docstring） | 提高代码可读性和维护性 |\n| `test_cases/test_semantic.py` | 4 | 添加注释说明该等待行为的用途 | 便于后续维护 |\n\n#### 总结 (Summary)\n- 审查行数: 4\n- 发现的严重问题数: 1\n- 提出的改进建议数: 2\n\n### 修复建议\n1. **严重问题修复**：\n   - 如果这是一个协程函数，必须将其改为 `async def` 并使用 `await asyncio.sleep(5)`。\n   - 如果不是协程函数，但需要异步支持，请调整逻辑以适应协程。\n   - 示例修改：\n     ```python\n     import asyncio\n\n     async def wait_for_response():\n         await asyncio.sleep(5)\n     ```\n\n2. **改进建议实现**：\n   - 为函数添加文档字符串：\n     ```python\n     async def wait_for_response():\n         \\\"\\\"\\\"等待响应，延迟 5 秒。\\\"\\\"\\\"\n         await asyncio.sleep(5)\n     ```\n\n请确认是否需要在文件中实现这些修改。",
+        "tools_used": [
+          "read_file",
+          "search_coding_rules"
+        ],
+        "rag_recalled": [
+          "- 23. 异步阻塞红线：在 async 定义的协程函数中，严禁调用 time.sleep()、requests.get() 等同步阻塞方法，必须使用 await asyncio.sleep() 或 aiohttp。 (RRF融合分: 0.0164)"
+        ],
+        "tool_check_status": "Passed",
+        "tool_check_msg": "OK",
+        "steps": 2,
+        "redundancy": false,
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 7,
+        "judge_reason": "报告中指出的严重问题和改进建议部分符合规范，但存在一些不准确和不完整的地方。",
+        "hallucination": false,
+        "hit_count": 3,
+        "missed_vulns": [],
+        "recall_rate": 1.0,
+        "ground_truth_score": 15.0,
+        "judge_details": {
+          "accuracy_score": 3,
+          "completeness_score": 2,
+          "actionability_score": 2,
+          "format_score": 1
+        },
+        "rag_hit_rate": 1.0,
+        "rag_mrr": 1.0
+      },
+      {
+        "exec_status": "Success",
+        "time_cost_sec": 31.68,
+        "tokens": 10060,
+        "output_preview": "### 审查报告（更新）\n\n#### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_semantic.py` | 1 | 使用了 `time.sleep` 进行阻塞式等待，违反了团队规范 | 高 | 根据团队规范，应使用 `asyncio.sleep()` 或公司自研的异步等待组件（如 `xingyu_async_sleep`）。 |\n\n#### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_semantic.py` | 4 | 添加函数文档字符串（Docstring） | 提高代码可读性和可维护性 |\n| `test_cases/test_semantic.py` | 3 | 函数名 `wait_for_response` 可能不够直观 | 建议改为更具体的名称，如 `wait_for_condition` 或类似的名称 |\n\n#### 总结 (Summary)\n- 审查行数: 4\n- 发现的严重问题数: 1\n- 提出的改进建议数: 2\n\n**修复建议**：\n1. 将 `time.sleep(5)` 替换为异步等待机制（如 `asyncio.sleep(5)` 或公司自研组件 `xingyu_async_sleep`）。\n2. 确保函数和调用上下文都支持异步操作，必要时重构代码为 `async def` 形式。",
+        "tools_used": [
+          "read_file",
+          "search_coding_rules"
+        ],
+        "rag_recalled": [
+          "- 23. 异步阻塞红线：在 async 定义的协程函数中，严禁调用 time.sleep()、requests.get() 等同步阻塞方法，必须使用 await asyncio.sleep() 或 aiohttp。 (RRF融合分: 0.0164)"
+        ],
+        "tool_check_status": "Passed",
+        "tool_check_msg": "OK",
+        "steps": 2,
+        "redundancy": false,
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 7,
+        "judge_reason": "报告指出了一个关键问题，但存在一些不准确和不完整的部分。",
+        "hallucination": false,
+        "hit_count": 3,
+        "missed_vulns": [],
+        "recall_rate": 1.0,
+        "ground_truth_score": 15.0,
+        "judge_details": {
+          "accuracy_score": 4,
+          "completeness_score": 2,
+          "actionability_score": 1,
+          "format_score": 1
+        },
+        "rag_hit_rate": 1.0,
+        "rag_mrr": 1.0
+      },
+      {
+        "exec_status": "Success",
+        "time_cost_sec": 17.53,
+        "tokens": 9548,
+        "output_preview": "## 审查报告\n\n### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| test_cases/test_semantic.py | 4 | 使用了 `time.sleep()`，违反了异步阻塞红线规范 | 高 | 在协程函数中应使用 `await asyncio.sleep()` 替代 `time.sleep()`，或使用公司推荐的异步解决方案。 |\n\n### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| test_cases/test_semantic.py | 3 | 为函数 `wait_for_response()` 添加文档字符串（Docstring） | 提升代码可读性和维护性 |\n| test_cases/test_semantic.py | 1 | 导入 `time` 模块，但在代码中未充分体现其用途 | 可以移除未使用的导入以避免混淆 |\n\n### 总结 (Summary)\n- 审查行数: 4\n- 发现的严重问题数: 1\n- 提出的改进建议数: 2\n\n**特别关注**：  \n严重问题中提到的异步阻塞红线规范（`time.sleep()`），必须立即修复以避免影响系统性能。建议查阅公司内部异步编程规范或联系相关团队负责人获取进一步指导。",
+        "tools_used": [
+          "read_file",
+          "ast_analyze",
+          "search_coding_rules"
+        ],
+        "rag_recalled": [
+          "- 23. 异步阻塞红线：在 async 定义的协程函数中，严禁调用 time.sleep()、requests.get() 等同步阻塞方法，必须使用 await asyncio.sleep() 或 aiohttp。 (RRF融合分: 0.0164)"
+        ],
+        "tool_check_status": "Passed",
+        "tool_check_msg": "OK",
+        "steps": 3,
+        "redundancy": false,
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 7,
+        "judge_reason": "报告中指出的问题和改进建议基本准确，但存在一些不完全符合参考规范的情况。",
+        "hallucination": false,
+        "hit_count": 3,
+        "missed_vulns": [],
+        "recall_rate": 1.0,
+        "ground_truth_score": 15.0,
+        "judge_details": {
+          "accuracy_score": 3,
+          "completeness_score": 2,
+          "actionability_score": 2,
+          "format_score": 1
+        },
+        "rag_hit_rate": 1.0,
+        "rag_mrr": 1.0
+      }
+    ]
+  },
+  {
+    "id": 8,
+    "category": "安全防线（硬编码与 eval）",
+    "status": "Flaky",
+    "e2e_status": "Flaky",
+    "pass_count": 2,
+    "pass_k": 3,
+    "time_cost_sec": 28.8,
+    "tokens": 8933,
+    "output_preview": "### 审查报告\n\n#### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_security.py` | 2 | 硬编码了 `secret_key`，违反安全规范 | 高 | 根据团队规范，使用 `xingyu_cache.gen_key()` 来动态生成密钥，确保密钥不硬编码且命名规范。 |\n| `test_cases/test_security.py` | 3 | 使用 `eval(user_input)` 执行用户输入，可能导致代码注入 | 极高 | **根据团队规范**，禁止使用 `eval()` 或 `exec()`。如需要解析动态输入，应使用 `ast.literal_eval` 或 JSON 解析等安全方式。 |\n\n#### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_security.py` | 1 | 函数命名应为 `_execute_code`，以符合命名规范 | 根据团队规范，内部辅助函数需以单下划线开头。 |\n| `test_cases/test_security.py` | 3 | 添加输入校验和异常处理 | 避免直接执行未经验证的输入，提升安全性。 |\n\n#### 总结 (Summary)\n- 审查行数: 3\n- 发现的严重问题数: 2\n- 提出的改进建议数: 2\n\n**建议紧急修复以上严重问题，以确保代码安全性。**",
+    "tools_used": [
+      "read_file",
+      "search_coding_rules"
+    ],
+    "rag_recalled": [
+      "- 24. 线程池规范：严禁通过 threading.Thread 手动创建大量线程，必须使用统一的 xingyu_threading.ThreadPoolManager 管理线程池，防止线程泄漏。 (RRF融合分: 0.0164)",
+      "- 16. 动态执行红线：严禁使用 eval() 或 exec() 执行任何动态拼接的字符串或不可信代码。如需解析，必须使用 ast.literal_eval 或 JSON 解析。 (RRF融合分: 0.0164)",
+      "- 12. Redis 缓存 Key 规范：使用 Redis 时，严禁硬编码 Key 字符串。必须通过 xingyu_cache.gen_key() 生成，且 Key 的命名必须强制带有环境前缀（如 prod:user:1001）。 (RRF融合分: 0.0164)",
+      "- 21. 命名规范：所有的内部辅助函数，必须以单下划线开头（如 _helper_function）。公共 API 函数名必须使用完整的英文单词，禁止使用拼音或无意义的缩写（如禁止使用 get_usr_inf 替代 get_user_info）。 (RRF融合分: 0.0161)",
+      "- 15. 业务异常体系：禁止直接抛出原生的 ValueError 或 KeyError。所有业务异常必须继承自 xingyu_exceptions.XingyuBaseException，并必须携带业务错误码（格式为 ERR_业务域_数字，如 ERR_USER_1001）。 (RRF融合分: 0.0159)",
+      "- 10. SQL 查询规范：严禁在 for 循环中执行单条 SQL 查询（N+1 问题）。必须使用批量查询 IN 语句或 ORM 的预加载（prefetch_related）功能。 (RRF融合分: 0.0156)"
+    ],
+    "tool_check_status": "Failed",
+    "tool_check_msg": "Missing: search_coding_rules",
+    "steps": 7,
+    "avg_steps": 2.3,
+    "rag_hit_rate": 1.0,
+    "rag_mrr": 1.0,
+    "redundancy": false,
+    "loop_circuit_breaker": false,
+    "score": 73.0,
+    "total_score": 73.0,
+    "tool_score": 13,
+    "performance_score": 9,
+    "stability_score": 8,
+    "rag_score": 15.0,
+    "quality_score": 28.0,
+    "recall_rate": 1.0,
+    "missed_vulns": [],
+    "ground_truth_score": 15.0,
+    "judge_score": 13.0,
+    "judge_details": [
+      {
+        "accuracy_score": 4,
+        "completeness_score": 3,
+        "actionability_score": 2,
+        "format_score": 1
+      },
+      {
+        "accuracy_score": 4,
+        "completeness_score": 3,
+        "actionability_score": 2,
+        "format_score": 1
+      },
+      {
+        "accuracy_score": 4,
+        "completeness_score": 2,
+        "actionability_score": 2,
+        "format_score": 1
+      }
+    ],
+    "judge_avg_raw": 8.67,
+    "judge_reasons": [
+      "报告准确指出了存在的安全问题，并提供了具体的修复建议，格式也符合要求。",
+      "报告准确指出了存在的问题，并提供了具体的修复建议，格式也符合要求。",
+      "报告准确指出了代码中的主要问题，但未提及业务异常体系的规范。"
+    ],
+    "has_hallucination": false,
+    "attempts": [
+      {
+        "exec_status": "Success",
+        "time_cost_sec": 17.99,
+        "tokens": 6412,
+        "output_preview": "以下是针对文件 `test_cases/test_security.py` 的审查报告：\n\n---\n\n### **严重问题 (Critical Issues)**\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_security.py` | 1 | 函数 `execute_code` 使用 `eval(user_input)` 执行用户输入，存在严重的安全漏洞，可能导致任意代码执行。 | 高危 | 应移除 `eval` 的使用，改用安全的解析方法或限定输入范围。 |\n| `test_cases/test_security.py` | 2 | 硬编码了 `secret_key`，可能导致密钥泄露。 | 中危 | 应将密钥移出代码，使用环境变量或安全的密钥管理系统存储。 |\n\n---\n\n### **改进建议 (Improvements)**\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_security.py` | 1 | 为函数添加文档字符串，说明其功能和参数。 | 提高代码可读性和可维护性。 |\n| `test_cases/test_security.py` | 3 | 如果必须处理用户输入，应添加输入验证和异常处理逻辑。 | 避免因非法输入导致运行时错误或安全漏洞。 |\n\n---\n\n### **总结 (Summary)**\n- **审查行数**: 3\n- **发现的严重问题数**: 2\n- **提出的改进建议数**: 2\n\n**关键问题**：  \n1. `eval()` 函数的使用是一个严重的安全隐患，必须立即修复。  \n2. 硬编码的密钥违反了安全最佳实践，应通过安全的方式管理密钥。  \n\n**进一步建议**：  \n- 调用 `search_coding_rules` 工具查阅团队对密钥管理和动态代码执行的规范，确保符合内部标准。  \n\n如果需要，我可以进一步协助完成修复工作或查阅团队规范。",
+        "tools_used": [
+          "read_file"
+        ],
+        "rag_recalled": [],
+        "tool_check_status": "Failed",
+        "tool_check_msg": "Missing: search_coding_rules",
+        "steps": 1,
+        "redundancy": false,
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 9,
+        "judge_reason": "报告准确指出了存在的安全问题，并提供了具体的修复建议，格式也符合要求。",
+        "hallucination": false,
+        "hit_count": 3,
+        "missed_vulns": [],
+        "recall_rate": 1.0,
+        "ground_truth_score": 15.0,
+        "judge_details": {
+          "accuracy_score": 4,
+          "completeness_score": 3,
+          "actionability_score": 2,
+          "format_score": 1
+        },
+        "rag_hit_rate": 1.0,
+        "rag_mrr": 1.0
+      },
+      {
+        "exec_status": "Success",
+        "time_cost_sec": 40.45,
+        "tokens": 10287,
+        "output_preview": "### 更新后的审查结果\n\n#### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| test_security.py | 2 | 硬编码的密钥 (`secret_key = \"sk-123456789\"`) | 高 | **违规**: 硬编码密钥。应立即移除并改为从环境变量或团队统一的密钥管理工具（如 `xingyu_secret_manager`）中获取密钥。 |\n| test_security.py | 3 | 使用 `eval()` 执行用户输入 (`eval(user_input)`) | 极高 | **违规**: 使用 `eval() 执行动态代码`。强烈建议改用 `ast.literal_eval` 或 JSON 解析（如 `json.loads`）来处理用户输入。如果必须评估动态代码，应严格限制输入范围和权限。 |\n\n#### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| test_security.py | 1-3 | 建议为函数添加文档字符串 (Docstring) | 提高代码可读性和可维护性，说明函数用途和参数。 |\n\n### 总结 (Summary)\n- 审查行数: 3\n- 发现的严重问题数: 2\n- 提出的改进建议数: 1\n\n### 修复建议\n1. **密钥管理**:\n   - 移除硬编码的 `secret_key`。\n   - 改为从环境变量或团队统一的密钥管理工具（如 `xingyu_secret_manager`）中获取密钥。\n\n2. **动态执行代码**:\n   - 移除 `eval(user_input)`。\n   - 如果需求是评估简单的 Python 表达式，可使用 `ast.literal_eval` 替代。\n   - 如果需求是解析数据，推荐使用 `json.loads`。\n\n3. **文档字符串**:\n   - 为函数添加 Docstring，说明其功能和使用场景。\n\n### 示例修复代码\n```python\nimport os\nimport ast\n\ndef execute_code(user_input):\n    \"\"\"安全地评估用户输入或解析数据。\n\n    Args:\n        user_input: 用户提供的输入字符串。\n\n    Returns:\n        评估或解析后的结果。\n    \"\"\"\n    # 从环境变量获取密钥\n    secret_key = os.getenv(\"SECRET_KEY\")\n    # 使用 ast.literal_eval 替代 eval\n    return ast.literal_eval(user_input)\n```",
+        "tools_used": [
+          "read_file",
+          "search_coding_rules"
+        ],
+        "rag_recalled": [
+          "- 24. 线程池规范：严禁通过 threading.Thread 手动创建大量线程，必须使用统一的 xingyu_threading.ThreadPoolManager 管理线程池，防止线程泄漏。 (RRF融合分: 0.0164)",
+          "- 16. 动态执行红线：严禁使用 eval() 或 exec() 执行任何动态拼接的字符串或不可信代码。如需解析，必须使用 ast.literal_eval 或 JSON 解析。 (RRF融合分: 0.0164)"
+        ],
+        "tool_check_status": "Passed",
+        "tool_check_msg": "OK",
+        "steps": 3,
+        "redundancy": false,
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 9,
+        "judge_reason": "报告准确指出了存在的问题，并提供了具体的修复建议，格式也符合要求。",
+        "hallucination": false,
+        "hit_count": 3,
+        "missed_vulns": [],
+        "recall_rate": 1.0,
+        "ground_truth_score": 15.0,
+        "judge_details": {
+          "accuracy_score": 4,
+          "completeness_score": 3,
+          "actionability_score": 2,
+          "format_score": 1
+        },
+        "rag_hit_rate": 1.0,
+        "rag_mrr": 1.0
+      },
+      {
+        "exec_status": "Success",
+        "time_cost_sec": 27.96,
+        "tokens": 10099,
+        "output_preview": "### 审查报告\n\n#### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| `test_cases/test_security.py` | 2 | 硬编码了 `secret_key`，违反安全规范 | 高 | 根据团队规范，使用 `xingyu_cache.gen_key()` 来动态生成密钥，确保密钥不硬编码且命名规范。 |\n| `test_cases/test_security.py` | 3 | 使用 `eval(user_input)` 执行用户输入，可能导致代码注入 | 极高 | **根据团队规范**，禁止使用 `eval()` 或 `exec()`。如需要解析动态输入，应使用 `ast.literal_eval` 或 JSON 解析等安全方式。 |\n\n#### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_security.py` | 1 | 函数命名应为 `_execute_code`，以符合命名规范 | 根据团队规范，内部辅助函数需以单下划线开头。 |\n| `test_cases/test_security.py` | 3 | 添加输入校验和异常处理 | 避免直接执行未经验证的输入，提升安全性。 |\n\n#### 总结 (Summary)\n- 审查行数: 3\n- 发现的严重问题数: 2\n- 提出的改进建议数: 2\n\n**建议紧急修复以上严重问题，以确保代码安全性。**",
+        "tools_used": [
+          "read_file",
+          "search_coding_rules"
+        ],
+        "rag_recalled": [
+          "- 16. 动态执行红线：严禁使用 eval() 或 exec() 执行任何动态拼接的字符串或不可信代码。如需解析，必须使用 ast.literal_eval 或 JSON 解析。 (RRF融合分: 0.0164)",
+          "- 12. Redis 缓存 Key 规范：使用 Redis 时，严禁硬编码 Key 字符串。必须通过 xingyu_cache.gen_key() 生成，且 Key 的命名必须强制带有环境前缀（如 prod:user:1001）。 (RRF融合分: 0.0164)",
+          "- 21. 命名规范：所有的内部辅助函数，必须以单下划线开头（如 _helper_function）。公共 API 函数名必须使用完整的英文单词，禁止使用拼音或无意义的缩写（如禁止使用 get_usr_inf 替代 get_user_info）。 (RRF融合分: 0.0161)",
+          "- 15. 业务异常体系：禁止直接抛出原生的 ValueError 或 KeyError。所有业务异常必须继承自 xingyu_exceptions.XingyuBaseException，并必须携带业务错误码（格式为 ERR_业务域_数字，如 ERR_USER_1001）。 (RRF融合分: 0.0159)",
+          "- 10. SQL 查询规范：严禁在 for 循环中执行单条 SQL 查询（N+1 问题）。必须使用批量查询 IN 语句或 ORM 的预加载（prefetch_related）功能。 (RRF融合分: 0.0156)"
+        ],
+        "tool_check_status": "Passed",
+        "tool_check_msg": "OK",
+        "steps": 3,
+        "redundancy": false,
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 8,
+        "judge_reason": "报告准确指出了代码中的主要问题，但未提及业务异常体系的规范。",
+        "hallucination": false,
+        "hit_count": 3,
+        "missed_vulns": [],
+        "recall_rate": 1.0,
+        "ground_truth_score": 15.0,
+        "judge_details": {
+          "accuracy_score": 4,
+          "completeness_score": 2,
+          "actionability_score": 2,
+          "format_score": 1
+        },
+        "rag_hit_rate": 1.0,
+        "rag_mrr": 1.0
+      }
+    ]
+  },
+  {
+    "id": 9,
+    "category": "防幻觉（无违规优质代码）",
+    "status": "Stable",
+    "e2e_status": "Stable",
+    "pass_count": 3,
+    "pass_k": 3,
+    "time_cost_sec": 16.84,
+    "tokens": 6364,
+    "output_preview": "从文件 `test_cases/test_clean.py` 的内容来看，代码非常简单，只包含一个函数 `add_numbers`，用于计算两个整数的和。以下是对该代码的审查报告：\n\n---\n\n### **严重问题 (Critical Issues)**\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| -    | -    | -        | -        | -        |\n\n未发现严重问题。\n\n---\n\n### **改进建议 (Improvements)**\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_clean.py` | 1 | 添加测试用例 | 目前的函数没有测试用例，无法验证其功能是否正确。 |\n| `test_cases/test_clean.py` | 1 | 增加参数验证 | 如果输入参数为 `None` 或其他非整数类型，函数会抛出异常。建议添加类型检查或异常捕获逻辑。 |\n\n---\n\n### **总结 (Summary)**\n- 审查行数: 3\n- 发现的严重问题数: 0\n- 提出的改进建议数: 2\n\n**建议下一步：**\n1. 补充测试用例，验证函数的正确性。\n2. 考虑增加参数的输入验证或异常处理，增强代码的健壮性。",
+    "tools_used": [
+      "read_file"
+    ],
+    "rag_recalled": [],
+    "tool_check_status": "Passed",
+    "tool_check_msg": "OK",
+    "steps": 3,
+    "avg_steps": 1.0,
+    "rag_hit_rate": 1.0,
+    "rag_mrr": 1.0,
+    "redundancy": false,
+    "loop_circuit_breaker": false,
+    "score": 97.0,
+    "total_score": 97.0,
+    "tool_score": 25,
+    "performance_score": 15,
+    "stability_score": 15,
+    "rag_score": 15.0,
+    "quality_score": 27.0,
+    "recall_rate": 1.0,
+    "missed_vulns": [],
+    "ground_truth_score": 15.0,
+    "judge_score": 12.0,
+    "judge_details": [
+      {
+        "accuracy_score": 4,
+        "completeness_score": 2,
+        "actionability_score": 2,
+        "format_score": 1
+      },
+      {
+        "accuracy_score": 4,
+        "completeness_score": 3,
+        "actionability_score": 1,
+        "format_score": 1
+      },
+      {
+        "accuracy_score": 4,
+        "completeness_score": 3,
+        "actionability_score": 1,
+        "format_score": 1
+      }
+    ],
+    "judge_avg_raw": 8.0,
+    "judge_reasons": [
+      "报告准确指出了原始代码中不存在的严重问题，但提出了合理的改进建议，包括增加测试用例和改进文档字符串。报告格式正确，但未发现逻辑错误或边界情况等语义级缺陷。",
+      "报告准确指出了代码的边界情况和异常处理问题，提供了具体的改进建议，并且格式正确。",
+      "报告准确指出了代码的潜在改进点，但未发现严重问题，格式也符合要求。"
+    ],
+    "has_hallucination": false,
+    "attempts": [
+      {
+        "exec_status": "Success",
+        "time_cost_sec": 15.64,
+        "tokens": 6332,
+        "output_preview": "### 审查报告: test_cases/test_clean.py\n\n#### 严重问题 (Critical Issues)\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| 无 | - | 无严重问题 | - | - |\n\n#### 改进建议 (Improvements)\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| test_cases/test_clean.py | 3 | 建议添加测试用例以覆盖边界条件（如负数、零、大整数） | 提高测试覆盖率 |\n| test_cases/test_clean.py | 1 | 建议为 `add_numbers` 函数添加更详细的文档字符串，说明输入输出的约束条件 | 提高代码可读性和维护性 |\n\n#### 总结 (Summary)\n- 审查行数: 3\n- 发现的严重问题数: 0\n- 提出的改进建议数: 2\n\n**建议补充的测试用例示例:**\n```python\ndef test_add_numbers_negative():\n    assert add_numbers(-1, -1) == -2\n\ndef test_add_numbers_zero():\n    assert add_numbers(0, 0) == 0\n\ndef test_add_numbers_large():\n    assert add_numbers(1000000, 1000000) == 2000000\n```\n\n如果需要进一步分析，可以尝试调用 `ast_analyze` 工具检查更多细节或调用 `search_coding_rules` 查阅相关内部规范。",
+        "tools_used": [
+          "read_file"
+        ],
+        "rag_recalled": [],
+        "tool_check_status": "Passed",
+        "tool_check_msg": "OK",
+        "steps": 1,
+        "redundancy": false,
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 8,
+        "judge_reason": "报告准确指出了原始代码中不存在的严重问题，但提出了合理的改进建议，包括增加测试用例和改进文档字符串。报告格式正确，但未发现逻辑错误或边界情况等语义级缺陷。",
+        "hallucination": false,
+        "hit_count": 0,
+        "missed_vulns": [],
+        "recall_rate": 1.0,
+        "ground_truth_score": 15.0,
+        "judge_details": {
+          "accuracy_score": 4,
+          "completeness_score": 2,
+          "actionability_score": 2,
+          "format_score": 1
+        },
+        "rag_hit_rate": 1.0,
+        "rag_mrr": 1.0
+      },
+      {
+        "exec_status": "Success",
+        "time_cost_sec": 20.96,
+        "tokens": 6463,
+        "output_preview": "从读取的文件内容来看，`test_cases/test_clean.py` 文件中定义了一个简单的函数 `add_numbers`，该函数接受两个整数参数并返回它们的和。以下是针对该代码的审查报告：\n\n---\n\n### 审查报告\n\n#### 1. 代码风格与可读性\n- **PEP8 规范**：代码符合 PEP8 规范，缩进和空格使用正确。\n- **命名**：函数名 `add_numbers` 清晰表达了其功能，参数名 `a` 和 `b` 虽然简短，但在这种简单场景下是可接受的。\n- **注释**：函数提供了文档字符串（Docstring），说明了其功能。\n\n#### 2. 逻辑正确性\n- **边界情况**：函数没有显式处理输入参数的边界情况（例如，是否传递了非整数类型的参数）。\n- **异常处理**：未包含异常处理逻辑，可能导致传递非整数参数时抛出 `TypeError`。\n\n#### 3. 安全性\n- **硬编码**：无硬编码密钥或敏感信息。\n- **动态执行**：未使用 `eval()` 或 `exec()`。\n- **用户输入**：函数未接收用户输入，安全性问题较少。\n\n#### 4. 可维护性\n- **单一职责**：函数仅做一件事（计算两个数的和），符合单一职责原则。\n- **代码长度**：函数非常简短，可读性高。\n\n#### 5. 团队内部规范\n由于代码非常简单，没有使用任何第三方库或复杂逻辑，因此不需要额外调用 `search_coding_rules` 查阅团队规范。\n\n---\n\n### 改进建议\n\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| test_cases/test_clean.py | 1 | 添加类型检查或异常处理，确保参数为整数 | 提高代码鲁棒性，避免传递非整数参数时抛出异常 |\n\n---\n\n### 总结\n- 审查行数: 3\n- 发现的严重问题数: 0\n- 提出的改进建议数: 1\n\n整体来看，代码质量较高，但可以在异常处理方面进一步完善。",
+        "tools_used": [
+          "read_file"
+        ],
+        "rag_recalled": [],
+        "tool_check_status": "Passed",
+        "tool_check_msg": "OK",
+        "steps": 1,
+        "redundancy": false,
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 8,
+        "judge_reason": "报告准确指出了代码的边界情况和异常处理问题，提供了具体的改进建议，并且格式正确。",
+        "hallucination": false,
+        "hit_count": 0,
+        "missed_vulns": [],
+        "recall_rate": 1.0,
+        "ground_truth_score": 15.0,
+        "judge_details": {
+          "accuracy_score": 4,
+          "completeness_score": 3,
+          "actionability_score": 1,
+          "format_score": 1
+        },
+        "rag_hit_rate": 1.0,
+        "rag_mrr": 1.0
+      },
+      {
+        "exec_status": "Success",
+        "time_cost_sec": 13.92,
+        "tokens": 6298,
+        "output_preview": "从文件 `test_cases/test_clean.py` 的内容来看，代码非常简单，只包含一个函数 `add_numbers`，用于计算两个整数的和。以下是对该代码的审查报告：\n\n---\n\n### **严重问题 (Critical Issues)**\n| 文件 | 行号 | 问题描述 | 严重程度 | 修复建议 |\n|------|------|----------|----------|----------|\n| -    | -    | -        | -        | -        |\n\n未发现严重问题。\n\n---\n\n### **改进建议 (Improvements)**\n| 文件 | 行号 | 改进建议 | 原因 |\n|------|------|----------|------|\n| `test_cases/test_clean.py` | 1 | 添加测试用例 | 目前的函数没有测试用例，无法验证其功能是否正确。 |\n| `test_cases/test_clean.py` | 1 | 增加参数验证 | 如果输入参数为 `None` 或其他非整数类型，函数会抛出异常。建议添加类型检查或异常捕获逻辑。 |\n\n---\n\n### **总结 (Summary)**\n- 审查行数: 3\n- 发现的严重问题数: 0\n- 提出的改进建议数: 2\n\n**建议下一步：**\n1. 补充测试用例，验证函数的正确性。\n2. 考虑增加参数的输入验证或异常处理，增强代码的健壮性。",
+        "tools_used": [
+          "read_file"
+        ],
+        "rag_recalled": [],
+        "tool_check_status": "Passed",
+        "tool_check_msg": "OK",
+        "steps": 1,
+        "redundancy": false,
+        "loop_circuit_breaker": false,
+        "judge_score_raw": 8,
+        "judge_reason": "报告准确指出了代码的潜在改进点，但未发现严重问题，格式也符合要求。",
+        "hallucination": false,
+        "hit_count": 0,
+        "missed_vulns": [],
+        "recall_rate": 1.0,
+        "ground_truth_score": 15.0,
+        "judge_details": {
+          "accuracy_score": 4,
+          "completeness_score": 3,
+          "actionability_score": 1,
+          "format_score": 1
+        },
+        "rag_hit_rate": 1.0,
+        "rag_mrr": 1.0
       }
     ]
   }

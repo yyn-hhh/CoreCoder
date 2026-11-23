@@ -80,9 +80,30 @@ def generate_markdown_report(json_file="eval_results.json", output_file="review_
             tool_score = item.get("tool_score", "N/A")
             performance_score = item.get("performance_score", "N/A")
             stability_score = item.get("stability_score", "N/A")
+            rag_score = item.get("rag_score", "N/A")
             quality_score = item.get("quality_score", "N/A")
-            f.write(f"**维度得分**: 工具 {tool_score} / 性能 {performance_score} / 稳定性 {stability_score} / 质量 {quality_score}\n\n")
-            f.write(f"**报告质量得分**: {quality_score} / 30\n\n")
+            ground_truth_score = item.get("ground_truth_score", "N/A")
+            judge_score = item.get("judge_score", "N/A")
+            f.write(f"**维度得分**: 工具 {tool_score} / 性能 {performance_score} / 稳定性 {stability_score} / RAG {rag_score} / 质量 {quality_score}\n\n")
+            f.write(f"**报告质量得分**: {quality_score} / 30 (硬指标: {ground_truth_score} + 裁判: {judge_score})\n\n")
+
+            # 裁判细项：只展示第一次采样返回的四个子维度
+            judge_details = item.get("judge_details") or []
+            first_details = judge_details[0] if judge_details else {}
+            if first_details:
+                accuracy_score = first_details.get("accuracy_score", "N/A")
+                completeness_score = first_details.get("completeness_score", "N/A")
+                actionability_score = first_details.get("actionability_score", "N/A")
+                format_score = first_details.get("format_score", "N/A")
+                f.write(
+                    f"**裁判细项**: 准确性 {accuracy_score}/4 | 完整性 {completeness_score}/3 | "
+                    f"可用性 {actionability_score}/2 | 格式 {format_score}/1\n\n"
+                )
+
+            # 漏报漏洞：三轮采样都未命中的期望漏洞
+            missed_vulns = item.get("missed_vulns") or []
+            if missed_vulns:
+                f.write(f"**漏报漏洞**: {', '.join(missed_vulns)}\n\n")
 
             # 兼容旧结果：tools_used 缺失或为空时显示“无”
             tools_used = item.get("tools_used") or []
@@ -95,7 +116,7 @@ def generate_markdown_report(json_file="eval_results.json", output_file="review_
             rag_text = f"{len(rag_recalled)} 条" if rag_recalled else "无"
             tool_check_status = item.get("tool_check_status", "N/A")
             tool_check_msg = item.get("tool_check_msg", "N/A")
-            steps = item.get("steps", "N/A")
+            avg_steps = item.get("avg_steps", "N/A")
             redundancy = item.get("redundancy", "N/A")
             loop_circuit_breaker = item.get("loop_circuit_breaker", "N/A")
             # 新增 Pass@K 字段；旧结果缺失时回退到单次值
@@ -104,13 +125,19 @@ def generate_markdown_report(json_file="eval_results.json", output_file="review_
             pass_k = item.get("pass_k", "N/A")
             avg_time = item.get("time_cost_sec", "N/A")
             avg_tokens = item.get("tokens", "N/A")
+            rag_hit_rate = item.get("rag_hit_rate")
+            rag_mrr = item.get("rag_mrr")
+            if isinstance(rag_hit_rate, (int, float)) and isinstance(rag_mrr, (int, float)):
+                rag_metrics_text = f"Hit@4 {rag_hit_rate * 100:.1f}% | MRR {rag_mrr:.3f}"
+            else:
+                rag_metrics_text = "N/A"
             f.write(
                 f"**状态**: {e2e_status}{(' ' + conclusion) if conclusion else ''} | **通过**: {pass_count}/{pass_k} | "
                 f"**平均耗时**: {avg_time}s | **平均Token**: {avg_tokens} | "
-                f"**步骤**: {steps} | "
+                f"**平均步骤**: {avg_steps} | "
                 f"**冗余**: {redundancy} | **熔断**: {loop_circuit_breaker} | "
                 f"**工具调用**: {tools_text} | "
-                f"**RAG 召回**: {rag_text} | **工具校验**: "
+                f"**RAG 召回**: {rag_text} | **RAG 检索指标**: {rag_metrics_text} | **工具校验**: "
                 f"{tool_check_status} ({tool_check_msg})\n\n"
             )
             
