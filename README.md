@@ -10,7 +10,7 @@
 - **RAG 规范检索**：按团队规范构建向量库，审查时自动检索 `coding_rules.txt`。
 - **长期记忆**：跨会话记住用户偏好与关键信息，自动召回、语义去重，支持按指令遗忘。
 - **MCP 扩展**：运行时通过 `/mcp` 接入外部 MCP Server。
-- **自动化评测**：Pass@3 稳定性采样，自动生成 Markdown 评测报告。
+- **自动化评测**：Pass@3 稳定性采样，自动生成 Markdown 评测报告；内置 RAG Hit@4 / MRR 检索质量评估。
 
 ## 2. 环境要求
 
@@ -69,6 +69,7 @@ OPENAI_API_KEY=你的APIKey
 | `CORECODER_TEMPERATURE` | 否 | 采样温度，默认 `0` |
 | `CORECODER_MAX_CONTEXT` | 否 | 上下文上限，默认 `128000` |
 | `CORECODER_PROVIDER` | 否 | `openai` 或 `litellm` |
+| `DISABLE_MEMORY_WRITE` | 否 | 评测或调试时禁用长期记忆写入，默认 `false`；`run_eval.py` 启动时自动开启 |
 | `JUDGE_API_KEY` | 是* | 评测裁判专用 Key，与主 Agent Key 隔离使用 |
 | `JUDGE_BASE_URL` | 否 | 裁判 Base URL，默认 `https://api.siliconflow.cn/v1` |
 | `JUDGE_MODEL` | 否 | 裁判模型，默认 `Qwen/Qwen2.5-32B-Instruct` |
@@ -203,6 +204,8 @@ python -m corecoder.build_rag
 
 重建时会调用 SiliconFlow 的 `BAAI/bge-m3` Embedding 模型，使用的 Key 同样是 `.env` 中的 `OPENAI_API_KEY`。如果未配置，`search_coding_rules` 会返回明确提示。
 
+检索实现采用“混合检索”策略：Qdrant 向量召回按相似度 `>= 0.6` 过滤，BM25 按 `score > 0` 过滤；双路各取 Top-10 后使用 RRF（`k=60`）融合，最终返回 Top-4，供 Hit@4 / MRR 评估。
+
 ## 10. 长期记忆（Long-term Memory）
 
 Agent 会在本地维护一份跨会话的长期记忆，用于记住用户偏好和关键信息：
@@ -211,6 +214,7 @@ Agent 会在本地维护一份跨会话的长期记忆，用于记住用户偏�
 - **疑问句保护**：输入以“吗”“呢”“什么”“哪些”结尾，或包含“怎么”“？”等疑问标记时，不会误存为偏好记忆。
 - **自动召回**：每次调用 LLM 前，会用 BGE-M3 向量化当前输入，从 `long_term_memory` 集合检索相关记忆；相似度大于 `0.6` 的记忆会被拼接到 System Prompt 末尾，作为历史记忆参考。
 - **语义去重**：保存前先检索最相似的一条历史记忆，相似度大于 `0.9` 时跳过保存，避免重复写入。
+- **评测隔离**：`run_eval.py` 启动时会把 `Config.disable_memory_write` 设为 True，评测期间不写入任何长期记忆，避免测试数据污染。
 - **按指令遗忘**：
   - 输入 `清空记忆` 或 `忘记一切`：清空全部长期记忆。
   - 输入 `忘记我关于XXX的偏好`：删除与 XXX 相关的偏好记忆；先按相似度（`> 0.85`）匹配，未命中时按关键词兜底匹配，兼容“开发框架 / 框架开发”这类中文词序变体。
@@ -229,6 +233,7 @@ Agent 会在本地维护一份跨会话的长期记忆，用于记住用户偏�
 - `expected_tools`：期望调用到的工具，漏调会判定失败。
 - `forbidden_tools`：禁止调用的工具，越权调用会判定失败。
 - `expected_tool_args`：期望的具体工具参数，参数不匹配会判定失败。
+- `expected_rag_ids`：期望命中的 RAG 规范 ID（如 `["16"]`），用来计算 Hit@4 / MRR；非 RAG 用例可不配置。
 
 运行评测：
 
@@ -240,16 +245,18 @@ python run_eval.py
 
 - 每个用例连续采样 3 次（`PASS_K = 3`），每次采样前自动 `agent.reset()`，保证样本相互独立。
 - 记录每次调用的工具轨迹、工具参数、总调用步骤数、连续重复调用（冗余）、工具熔断标记以及 RAG 实际召回的规范文本。
+- 每轮 attempt 按 `expected_rag_ids` 计算 Hit@4 与 MRR；三轮平均后写入 `rag_hit_rate` / `rag_mrr` / `rag_score`。
 - 每轮产出报告后调用独立裁判模型评估质量，裁判 Key/URL 使用 `JUDGE_API_KEY` / `JUDGE_BASE_URL`，需在 `.env` 中配置；Git Diff 等无直接代码文件的用例跳过裁判，默认给 7 分。
 - 3 次全部通过判定为 `Stable`，部分通过判定为 `Flaky`，全部失败判定为 `Failed`。
-- 最终输出 3 次的平均耗时、平均 Token，以及汇总后的工具轨迹和 RAG 召回数量；单次采样明细保存在 `eval_results.json` 的 `attempts` 中。
+- 最终输出 3 次的平均耗时、平均 Token、RAG Hit@4 / MRR，以及汇总后的工具轨迹和 RAG 召回数量；单次采样明细保存在 `eval_results.json` 的 `attempts` 中。
 
 评分规则（满分 100 分）：
 
-- 工具与轨迹分（30 分）：熔断直接 0 分；工具校验失败扣 15 分；存在冗余扣 5 分；总步数 > 5 扣 5 分。
-- 性能与成本分（20 分）：平均耗时 > 20s 扣 4 分、> 30s 扣 8 分；平均 Token > 8000 扣 4 分、> 12000 扣 8 分。
-- 稳定性分（20 分）：Pass@3 全过 20 分，过 2 次 10 分，过 1 次 5 分，全挂 0 分。
-- 报告质量分（30 分）：三次裁判原始平均分 × 3；任一次出现幻觉则该维分清零。
+- 工具与轨迹分（25 分）：熔断直接 0 分；工具校验失败扣 12 分；存在冗余扣 4 分；平均步骤 > 6 扣 4 分。
+- 性能与成本分（15 分）：平均耗时 > 20s 扣 3 分、> 30s 扣 6 分；平均 Token > 8000 扣 3 分、> 12000 扣 6 分。
+- 稳定性分（15 分）：Pass@3 全过 15 分，过 2 次 8 分，过 1 次 4 分，全挂 0 分。
+- RAG 检索质量分（15 分）：Hit@4 占 10 分、MRR 占 5 分，公式为 `10 * avg_rag_hit_rate + 5 * avg_rag_mrr`；没有 `expected_rag_ids` 的用例按满分处理。
+- 报告质量分（30 分）：硬指标召回 15 分 + 裁判 15 分；任一次出现幻觉则该维分清零。
 
 生成 Markdown 报告：
 
@@ -259,8 +266,8 @@ python generate_report.py
 
 产物文件：
 
-- `eval_results.json`：原始评测结果，包含 `e2e_status`、`pass_count`、`pass_k`、`tool_score`、`performance_score`、`stability_score`、`quality_score`、`judge_avg_raw`、`judge_reasons`、`has_hallucination`、`attempts` 等字段。
-- `review_report.md`：格式化后的 Markdown 评测报告，展示综合得分、维度得分、报告质量得分、裁判点评、稳定性、工具校验与 RAG 召回结果。
+- `eval_results.json`：原始评测结果，包含 `e2e_status`、`pass_count`、`pass_k`、`tool_score`、`performance_score`、`stability_score`、`rag_score`、`rag_hit_rate`、`rag_mrr`、`quality_score`、`judge_avg_raw`、`judge_reasons`、`has_hallucination`、`attempts` 等字段。
+- `review_report.md`：格式化后的 Markdown 评测报告，展示综合得分、维度得分（含 RAG）、报告质量得分、裁判点评、稳定性、RAG Hit@4 / MRR、工具校验与 RAG 召回结果。
 ## 12. 项目结构
 
 ```text
@@ -331,6 +338,10 @@ python -m corecoder.build_rag
 **长期记忆不生效或内容混乱**
 
 记忆中保存的是本地 `long_term_memory` 集合。可以在对话中输入 `清空记忆` 一键重置，或输入 `忘记我关于XXX的偏好` 删除指定主题的记忆。
+
+**评测仍能召回旧记忆**
+
+本地 Qdrant 的 `delete_collection` 后立即重建可能残留旧 point；`clear_all_memory` 已改为额外遍历并按 point id 删除全部残留点。如果仍异常，可删除 `corecoder/qdrant_data/collection/long_term_memory/` 后重建。
 
 **密钥安全问题**
 
