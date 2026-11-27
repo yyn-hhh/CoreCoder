@@ -4,7 +4,7 @@
 - save_memory: 保存用户偏好 / 关键信息
 - recall_memory: 根据当前输入召回相关历史记忆
 - clear_all_memory: 全量清空长期记忆
-- delete_memory_by_query: 按相似度删除相关长期记忆
+- delete_memory_by_query: 按 LLM 意图 + 向量相似度删除相关长期记忆
 """
 
 import os
@@ -27,8 +27,6 @@ _DEFAULT_BASE_URL = "https://api.siliconflow.cn/v1"
 _SCORE_THRESHOLD = 0.6
 # 保存前去重阈值：与现有记忆相似度高于该值视为重复
 _DEDUP_THRESHOLD = 0.9
-# 删除指令黑名单：单独出现时过于宽泛，无法确认具体删除目标
-_GENERIC_DELETE_KEYWORDS = {"代码", "项目", "框架", "语言", "开发"}
 # 单次删除最多匹配数，超过则视为删除目标过宽
 _DELETE_MAX_MATCHES = 5
 
@@ -165,42 +163,53 @@ class MemoryManager:
             print(f"[MemoryManager] 清空记忆失败: {e}")
             return False
 
-    @staticmethod
-    def _is_topic_match(text: str, keyword: str) -> bool:
-        """关键词包含匹配，兼容“开发框架 / 框架开发”这类中文词序变体。"""
-        if not text or not keyword:
-            return False
-        if keyword in text or keyword[::-1] in text:
-            return True
-        # 单字无法构成可靠主题；2 字以上短词同样允许 N-gram 匹配
-        if len(keyword) < 2:
-            return False
-        shingles = {keyword[i : i + 2] for i in range(len(keyword) - 1)}
-        overlap = sum(1 for shingle in shingles if shingle in text)
-        return overlap >= min(2, len(shingles))
-
     def _block_delete(self, message: str) -> bool:
         """拒绝删除并记录原因，返回 False。"""
         self.last_delete_message = message
         print(f"[MemoryManager] {message}")
         return False
 
+    def _extract_delete_feature(self, query: str) -> str:
+        """调用 LLM 提炼删除目标的精准特征；过于宽泛或调用失败时返回 REJECT。"""
+        system_prompt = (
+            "你是一个记忆管理助手。用户想删除关于某项事务的长期记忆。"
+            "请提炼出要删除的精准特征（如：前端的喜好、数据库的规范等）。"
+            "如果用户意图过于宽泛（如“删掉所有”、“代码”），请直接返回 'REJECT'。"
+        )
+        user_prompt = f"用户删除意图：{query}"
+        try:
+            client = OpenAI(api_key=self.api_key, base_url=self.base_url)
+            resp = client.chat.completions.create(
+                model=os.getenv("CORECODER_MODEL", "gpt-5.5"),
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=0.0,
+            )
+            return (resp.choices[0].message.content or "").strip().strip("'\"")
+        except Exception as e:
+            print(f"[MemoryManager] 删除意图提取失败: {e}")
+            return "REJECT"
+
     def delete_memory_by_query(self, query: str, threshold: float = 0.85) -> bool:
         """删除与 query 相关的历史记忆，返回是否删除成功。
 
-        删除指令往往是短关键词（如“开发框架”），与完整偏好句的向量相似度
-        可能达不到 threshold，所以相似度未命中时再按“文本包含关键词”兜底，
-        避免“忘记我关于XXX的偏好”失效。过于泛化的删除词会直接拒绝，
-        单次匹配超过 5 条也会熔断，防止误删过多记忆。
+        先用 LLM 提炼精准删除特征，再按向量相似度检索；意图过于宽泛或
+        匹配项过多时直接拒绝删除，避免误删。
         """
         self.last_delete_message = ""
         query = query.strip()
         if not self._available or not query:
             return False
-        if query in _GENERIC_DELETE_KEYWORDS:
-            return self._block_delete("删除目标过于宽泛，请指定具体技术栈")
+
+        # 先让 LLM 决定删除特征；返回 REJECT 或空结果时直接拒绝
+        feature = self._extract_delete_feature(query)
+        if not feature or "REJECT" in feature.upper():
+            return self._block_delete("删除意图过于宽泛，请提供更具体的删除特征")
+
         try:
-            query_vector = self._embed(query)
+            query_vector = self._embed(feature)
             # 取稍多结果再过滤，避免阈值较高时搜不到足够候选
             hits = self._search(query_vector, limit=50)
             matched_ids = [
@@ -209,34 +218,11 @@ class MemoryManager:
                 if getattr(hit, "score", 0) > threshold and hit.payload.get("text")
             ]
             if not matched_ids:
-                # 相似度阈值未命中时，按用户删除意图的明确关键词兜底匹配；
-                # 用 scroll 遍历全部记忆，避免检索 topN 之外的记录漏删
-                matched_ids = []
-                offset = None
-                while True:
-                    points, next_offset = self.qdrant.scroll(
-                        collection_name=_COLLECTION_NAME,
-                        limit=100,
-                        offset=offset,
-                    )
-                    matched_ids.extend(
-                        p.id
-                        for p in points
-                        if self._is_topic_match(p.payload.get("text", ""), query)
-                    )
-                    if len(matched_ids) > _DELETE_MAX_MATCHES:
-                        return self._block_delete(
-                            "匹配到过多泛化记忆，请提供更精确的删除关键词"
-                        )
-                    if next_offset is None:
-                        break
-                    offset = next_offset
-                if not matched_ids:
-                    print("[MemoryManager] 未找到需要删除的历史记忆")
-                    return False
+                print("[MemoryManager] 未找到需要删除的历史记忆")
+                return False
 
             if len(matched_ids) > _DELETE_MAX_MATCHES:
-                return self._block_delete("匹配到过多泛化记忆，请提供更精确的删除关键词")
+                return self._block_delete("匹配到过多泛化记忆，请提供更精确的删除特征")
 
             # 按 point id 精确删除命中的记忆
             self.qdrant.delete(
