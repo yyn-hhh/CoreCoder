@@ -11,7 +11,6 @@ which means it's done working and ready to report back.
 
 import concurrent.futures
 import inspect
-import re
 import threading
 from .llm import LLM
 from .tools import ALL_TOOLS
@@ -93,12 +92,12 @@ class Agent:
             cleared = self.memory.clear_all_memory()
             return "长期记忆已全部清空。" if cleared else "长期记忆未启用或清空失败，请检查日志。"
 
-        match = re.search(r"忘记我关于(.+?)的偏好", user_input)
-        if match:
-            keyword = match.group(1).strip()
-            deleted = self.memory.delete_memory_by_query(keyword)
+        # 更宽泛的删除意图判断：包含“忘记”且涉及“偏好/记忆”时，
+        # 直接把整句话交给 LLM 意图提取，避免正则死板漏判
+        if "忘记" in user_input and ("偏好" in user_input or "记忆" in user_input):
+            deleted = self.memory.delete_memory_by_query(user_input)
             if deleted:
-                return f"已删除与“{keyword}”相关的偏好记忆。"
+                return "已根据您的指令删除相关记忆。"
             reason = getattr(self.memory, "last_delete_message", "")
             return reason or "未找到需要删除的偏好记忆。"
 
